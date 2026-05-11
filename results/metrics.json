@@ -1,0 +1,63 @@
+{
+  "phase1": {
+    "date": "2026-05-11",
+    "dataset": "HaluEval-QA",
+    "n_train": 16000,
+    "n_test": 4000,
+    "split": "GroupShuffleSplit by qid, test_size=0.2, seed=42",
+    "primary_metric": "macro_f1",
+    "baselines": [
+      {
+        "model": "1_majority_class",
+        "accuracy": 0.5,
+        "balanced_accuracy": 0.5,
+        "macro_f1": 0.3333,
+        "precision_pos": 0.0,
+        "recall_pos": 0.0,
+        "roc_auc": 0.5,
+        "fit_seconds": 0.001
+      },
+      {
+        "model": "2_length_only_logreg",
+        "accuracy": 0.9437,
+        "balanced_accuracy": 0.9438,
+        "macro_f1": 0.9437,
+        "precision_pos": 0.9521,
+        "recall_pos": 0.9345,
+        "roc_auc": 0.9713,
+        "fit_seconds": 0.015
+      },
+      {
+        "model": "3_tfidf_answer_logreg",
+        "accuracy": 0.9193,
+        "balanced_accuracy": 0.9192,
+        "macro_f1": 0.9191,
+        "precision_pos": 0.951,
+        "recall_pos": 0.884,
+        "roc_auc": 0.9678,
+        "fit_seconds": 0.312
+      },
+      {
+        "model": "4_tfidf_q_plus_a_logreg",
+        "accuracy": 0.7887,
+        "balanced_accuracy": 0.7888,
+        "macro_f1": 0.788,
+        "precision_pos": 0.8265,
+        "recall_pos": 0.731,
+        "roc_auc": 0.866,
+        "fit_seconds": 3.468
+      },
+      {
+        "model": "5_lexical_overlap_threshold",
+        "accuracy": 0.714,
+        "balanced_accuracy": 0.714,
+        "macro_f1": 0.7026,
+        "precision_pos": 0.6538,
+        "recall_pos": 0.9095,
+        "roc_auc": 0.5933,
+        "fit_seconds": 0.0,
+        "threshold": 0.95
+      }
+    ]
+  }
+}

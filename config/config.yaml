@@ -1,0 +1,24 @@
+# NLP-2 — AI Agent Conversation Quality Scorer
+# Phase 1 config. Later phases will extend with model/HP sections.
+
+project_name: ai-agent-conversation-quality-scorer
+seed: 42
+
+dataset:
+  name: HaluEval-QA
+  source_url: https://raw.githubusercontent.com/RUCAIBox/HaluEval/main/data/qa_data.json
+  raw_path: data/raw/halueval_qa.json
+  processed_path: data/processed/halueval_qa.parquet
+  task: binary_classification
+  positive_label: hallucinated
+  fields: [knowledge, question, right_answer, hallucinated_answer]
+
+split:
+  test_size: 0.2
+  stratify_by: label
+  group_by_question: true   # both answers for one question stay in the same split
+
+metrics:
+  primary: macro_f1
+  secondary: [accuracy, balanced_accuracy, roc_auc, precision, recall]
+  ranking_metric: macro_f1

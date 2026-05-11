@@ -1,0 +1,11 @@
+# Phase 1 dependencies — additional libs (transformers, sentence-transformers, optuna,
+# streamlit, shap) added in later phases as needed.
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.4
+matplotlib>=3.8
+seaborn>=0.13
+jupyter>=1.0
+nbformat>=5.9
+ipykernel>=6.29
+tqdm>=4.66
