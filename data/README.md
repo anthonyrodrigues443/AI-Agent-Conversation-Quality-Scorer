@@ -4,7 +4,7 @@
 
 - **Source:** [RUCAIBox/HaluEval](https://github.com/RUCAIBox/HaluEval) — EMNLP 2023 ([Li et al. 2023](https://arxiv.org/abs/2305.11747))
 - **License:** MIT (per repo)
-- **File:** `qa_data.json` — JSONL, 10,000 rows
+- **File:** `qa_data.json` upstream; saved locally as `data/raw/halueval_qa.json` (renamed on download, see snippet below) — JSONL, 10,000 rows
 - **Schema:** `{knowledge, question, right_answer, hallucinated_answer}` — each row supplies one grounded + one hallucinated answer, so the binary classification corpus is 20,000 balanced rows.
 - **Construction:** Seed data is HotpotQA. ChatGPT is prompted to generate plausible hallucinated alternatives to the gold answer. Final samples are human-validated.
 

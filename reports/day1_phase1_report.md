@@ -23,7 +23,7 @@ Lock in the dataset, the primary metric, a reproducible train/test split, and a 
 
 ### How research shaped today's experiments
 - Use HaluEval-QA over TruthfulQA (the latter has known gold-answer errors and is now saturated due to training-set contamination per HalluLens analysis).
-- Report **macro F1** as primary; track ROC-AUC, balanced accuracy, precision, recall as secondaries. macro F1 is honest under class-collapse, equivalent to accuracy when classes are balanced, and aligns with what published benchmarks report.
+- Report **macro F1** as primary; track ROC-AUC, balanced accuracy, precision, recall as secondaries. macro F1 is insensitive to majority-class collapse and complements accuracy/balanced accuracy (not equivalent to accuracy, even under balanced classes), and aligns with what published benchmarks report.
 - Include a length-only baseline because EDA of *any* LLM-vs-LLM-generated dataset must probe length leakage before trusting deeper models.
 
 ## Dataset
