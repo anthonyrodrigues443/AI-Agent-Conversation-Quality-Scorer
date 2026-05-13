@@ -1,0 +1,12 @@
+model,paradigm,split,n,accuracy,macro_f1,balanced_acc,precision_pos,recall_pos,roc_auc,fit_seconds,predict_seconds
+sbert_paired_logreg,paired embed (k⊕a + cos + diff) + linear,raw,4000,0.96125,0.9612473623986033,0.9612499999999999,0.9689883070665989,0.953,0.9828635,0.261,0.013
+sbert_answer_logreg,sentence-embed + linear,raw,4000,0.96075,0.9607466413845035,0.96075,0.9694345389709628,0.9515,0.9825368749999999,0.061,0.005
+sbert_paired_xgb,paired embed + XGBoost,raw,4000,0.955,0.9549983799416779,0.955,0.9605263157894737,0.949,0.9856032499999999,52.639,0.047
+char35_logreg,char-ngram + logistic,raw,4000,0.95375,0.9537399355447269,0.95375,0.9675425038639877,0.939,0.9801380000000001,3.8,0.001
+PH1: length_only_logreg,phase-1 baseline,raw,4000,0.9437,0.9437,0.9438,0.9521,0.9345,0.9713,0.015,
+tfidf12_svc,word-ngram + linear hinge,raw,4000,0.93275,0.9327120453881017,0.93275,0.9543307086614173,0.909,0.9705348749999999,0.389,0.003
+PH1: tfidf_answer_logreg,phase-1 baseline,raw,4000,0.9193,0.9191,0.9192,0.951,0.884,0.9678,0.312,
+PH1: tfidf_q_plus_a_logreg,phase-1 baseline,raw,4000,0.7887,0.788,0.7888,0.8265,0.731,0.866,3.468,
+PH1: lexical_overlap_threshold,phase-1 baseline,raw,4000,0.714,0.7026,0.714,0.6538,0.9095,0.5933,0.0,
+nli_deberta_zeroshot,cross-encoder NLI (zero-shot),raw,4000,0.5915,0.5904761904761904,0.5914999999999999,0.5831818181818181,0.6415,0.5894901250000001,0.0,140.771
+PH1: majority_class,phase-1 baseline,raw,4000,0.5,0.3333,0.5,0.0,0.0,0.5,0.001,
