@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Heavy data (downloadable from source, no need to commit)
+data/raw/*.json
+data/raw/*.jsonl
+data/raw/*.csv
+data/processed/*.parquet
+data/processed/*.feather
+
+# Model artifacts
+models/*.joblib
+models/*.pkl
+models/*.pt
+models/*.safetensors
+
+# Logs / caches
+*.log
+results/_cache/
+results/*_cache/
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep

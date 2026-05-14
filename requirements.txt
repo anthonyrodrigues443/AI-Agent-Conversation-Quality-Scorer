@@ -1,0 +1,18 @@
+# Phase 1-2 dependencies. Additional libs (transformers fine-tuning, optuna,
+# streamlit, shap) will be added in later phases as needed.
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.4
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+jupyter>=1.0
+nbformat>=5.9
+ipykernel>=6.29
+tqdm>=4.66
+
+# Phase 2 — sentence embeddings, gradient boosting, cross-encoder NLI
+sentence-transformers>=2.6
+xgboost>=2.0
+torch>=2.2
+transformers>=4.40
