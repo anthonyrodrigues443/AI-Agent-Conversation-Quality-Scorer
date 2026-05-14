@@ -273,5 +273,47 @@
         "delta": -0.12324758574758587
       }
     }
+  },
+  "phase3": {
+    "date": "2026-05-14",
+    "dataset": "HaluEval-QA",
+    "n_train": 16000,
+    "n_test_raw": 4000,
+    "n_test_matched": 524,
+    "primary_metric": "macro_f1 on length_matched",
+    "char_ablation_best_config": {
+      "ngram_range": "(2, 5)",
+      "max_features": 25000,
+      "sublinear_tf": true
+    },
+    "matched_results": {
+      "char_best_p3": 0.7941453994059486,
+      "nli_persent_maxpool": 0.624224533392019,
+      "nli_persent_best_threshold": {
+        "threshold": 0.6502729758620263,
+        "f1": 0.6831322492277205
+      },
+      "meta_stack_char_sbert_nli": 0.80442037470726,
+      "mean_blend_char_sbert_nli": 0.7899661847014925
+    },
+    "matched_auroc": {
+      "char_best_p3": 0.7987879494201968,
+      "nli_persent_maxpool": 0.7027708175514247,
+      "meta_stack": 0.8475467630091487
+    },
+    "meta_coefs": {
+      "char": 6.19332709354919,
+      "sbert": 3.917421908306721,
+      "nli": 2.056889257151065,
+      "intercept": -6.109692001618118
+    },
+    "error_corr_char_sbert": 0.6577197641557468,
+    "error_corr_char_nli": -0.2227418378032719,
+    "error_corr_sbert_nli": -0.17219971889458852,
+    "oracle_upper_bound_matched_acc": 0.9790076335877863,
+    "nli_phase2_matched_f1": 0.7137237762237763,
+    "nli_phase2_matched_auroc": 0.7188683643144339,
+    "nli_persent_f1_lift_vs_p2": -0.08949924283175725,
+    "nli_persent_auroc_lift_vs_p2": -0.01609754676300923
   }
 }

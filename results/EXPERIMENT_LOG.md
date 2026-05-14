@@ -48,10 +48,88 @@ Primary metric: **macro F1** (locked Phase 1). Secondary: ROC-AUC. Positive clas
 | ANAH-v2 (published, raw) | 0.815 | Long-horizon target after fine-tuning (Phase 4-5) |
 | HF Leaderboard NLI (cited, averaged across domains) | AUROC 0.88 | Phase 3 will probe sentence-level NLI to close the gap |
 
+## Phase 3 additions — char-ngram saturation, per-sentence NLI, stacking, error analysis (2026-05-14)
+
+### Char-ngram ablation grid (48 configs, ranked by matched F1)
+
+| Rank | ngram_range | max_features | sublinear_tf | vocab_actual | f1_raw | f1_matched | Δ (raw−matched) |
+|---:|:---|---:|:---|---:|---:|---:|---:|
+| 1 | (2, 5) | 25,000 | True | 25,000 | 0.9645 | **0.7941** | +0.1703 |
+| 2 | (2, 4) | 50k–200k | True | 32,454 | 0.9647 | 0.7906 | +0.1742 |
+| 3 | (2, 4) | 25,000 | True | 25,000 | 0.9650 | 0.7906 | +0.1744 |
+| 4 | (3, 5) | 25,000 | True | 25,000 | 0.9590 | 0.7845 | +0.1745 |
+| 5 | (3, 6) | 25,000 | True | 25,000 | 0.9568 | 0.7806 | +0.1762 |
+| ... | (4, 6) | any | any | 78,214 | 0.93–0.94 | 0.74–0.75 | +0.19–0.20 (worst) |
+
+**Saturation finding:** The best matched-F1 vocab is **25,000**, not Phase 2's 200,000. Phase 2's `(3, 5)` family is below `(2, 5)` and `(2, 4)` — bigram-inclusive ranges beat trigram-only by ~1.5 F1. Sublinear-TF lift averaged across the grid = **+0.0008** (effectively zero). The `(4, 6)` family is the worst — too-long character sequences memorize answer-specific surface forms.
+
+### Per-sentence NLI vs single-pass NLI
+
+| Variant | macro F1 (matched) | AUROC (matched) | n calls per row |
+|:---|---:|---:|---:|
+| Phase 2 single-pass NLI (max_length=512) | **0.7137** | **0.7189** | 1 |
+| Phase 3 per-sentence max-pool (max_length=256, default threshold) | 0.6242 | 0.7028 | 2–3 (avg ~2.4) |
+| Phase 3 per-sentence max-pool (threshold sweep, t=0.65) | 0.6831 | — | 2–3 |
+
+**Decomposition HURT.** Δ F1 = −0.0895 vs Phase 2 single-pass. Knowledge passages in HaluEval-QA are concatenations of HotpotQA factoid sentences; splitting per-sentence introduces noise because each sentence alone is too thin a context for entailment. Published 0.88-AUROC ceiling does not reproduce with deberta-base zero-shot on this dataset.
+
+### Stacking — diversity check + meta-classifier
+
+**Pearson correlation of per-row error indicators on matched split (n=524):**
+| Pair | r |
+|:---|---:|
+| char ↔ sbert | +0.658 |
+| char ↔ nli | **−0.223** |
+| sbert ↔ nli | **−0.172** |
+
+**Oracle upper-bound** (perfect routing): 97.9% accuracy. Best individual: 79.6% acc → 18 pt of headroom.
+
+**Meta-classifier results:**
+
+| Model | matched F1 | matched accuracy | matched AUROC |
+|:---|---:|---:|---:|
+| **meta_logreg [char + sbert + nli]** | **0.8044** | **0.8053** | **0.8475** |
+| char_best_p3 (control) | 0.7941 | 0.7958 | 0.7988 |
+| mean_blend [char + sbert + nli] | 0.7900 | 0.7901 | 0.8709 |
+
+Meta coefficients: `coef[char]=+6.19, coef[sbert]=+3.92, coef[nli]=+2.06, intercept=−6.11`.
+
+**Stacking wins by +0.026 F1.** Even though NLI is the weakest individual model (F1 = 0.62), it has the largest *marginal* contribution because its errors are negatively correlated with the other two. Mean blend underperforms learned stacking because it ignores that char/SBERT correlate at +0.66 (double-counting).
+
+### Error analysis — char-ngram champion false-negative cluster
+
+`char_best_p3` matched confusion: TP=178, FN=84, FP=23, TN=239 → recall (hallu) = 0.679.
+
+| Cell | answer_len | n_tokens | jaccard_k | has_period | char_prob |
+|:---|---:|---:|---:|---:|---:|
+| TP | 38.7 | 6.5 | 0.103 | 0.984 | 0.860 |
+| **FN (missed hallu)** | **15.4** | **2.4** | 0.024 | **0.21** | 0.192 |
+| FP | 86.0 | 14.3 | 0.293 | 0.27 | 0.773 |
+| TN | 24.5 | 3.5 | 0.091 | 0.034 | 0.189 |
+
+**The 84 FNs are short, period-free, low-overlap answers — the kind that *look* like HotpotQA entity strings.** The char-ngram model has learned "long sentence-shaped answer ⇒ hallucination" and can't detect short entity-string hallucinations. This is a systematic failure mode, not borderline noise.
+
+## Updated cumulative length-matched leaderboard (top of the table)
+
+| Phase | Model | Paradigm | macro F1 | accuracy | AUROC |
+|---:|:---|:---|---:|---:|---:|
+| **3** | **meta_stack [char + sbert + nli]** | **stacked LogReg meta over 3 paradigms** | **0.8044** | **0.8053** | **0.8475** |
+| 3 | char_best_p3 ((2,5) × 25k × sublinear) | char-ngram + logistic (tuned) | 0.7941 | 0.7958 | 0.7988 |
+| 3 | mean_blend [char + sbert + nli] | unweighted mean of 3 probs | 0.7900 | 0.7901 | 0.8709 |
+| 2 | char35_logreg ((3,5) × 200k × sublinear) | char-ngram + logistic | 0.7789 | 0.7805 | 0.7971 |
+| 2 | sbert_paired_logreg | paired embed + linear | 0.7643 | 0.7653 | 0.7952 |
+| 2 | sbert_answer_logreg | sentence-embed + linear | 0.7598 | 0.7615 | 0.7887 |
+| 2 | tfidf12_svc | word-ngram + linear hinge | 0.7411 | 0.7443 | 0.7932 |
+| 2 | sbert_paired_xgb | paired embed + XGBoost | 0.7300 | 0.7309 | 0.7893 |
+| 2 | nli_deberta_zeroshot (single-pass) | cross-encoder NLI zero-shot | 0.7137 | 0.7137 | 0.7189 |
+| 3 | nli_persent_maxpool | cross-encoder NLI per-sentence (zero-shot) | 0.6242 | 0.6260 | 0.7028 |
+
 ## Phase 5 LLM judge head-to-head (placeholders — populated Phase 5)
 
 | Model | n (matched=524) | macro F1 | accuracy | precision | recall | latency/row | cost/1k |
 |---|---:|---:|---:|---:|---:|---:|---:|
+| Custom **meta_stack [char + sbert + nli]** (Phase 3 winner) | 524 | **0.8044** | **0.8053** | TBD | TBD | ~85 ms (char + sbert + nli combined) | ~$0.00005 |
+| Custom char_best_p3 ((2,5) × 25k, Phase 3 single-model winner) | 524 | 0.7941 | 0.7958 | 0.860 | 0.679 | 0 ms | ~$0.00001 |
 | Custom char35_logreg (Phase 2 winner) | 524 | 0.7789 | 0.7805 | 0.839 | 0.695 | 0 ms | ~$0.00001 |
 | Claude Opus 4.6 (zero-shot judge) | 50 (subsample) | TBD | TBD | TBD | TBD | ~24 s | ~$0.0045 |
 | Claude Haiku 4.5 (zero-shot judge) | 50 | TBD | TBD | TBD | TBD | ~3 s | ~$0.0003 |
@@ -65,5 +143,10 @@ Primary metric: **macro F1** (locked Phase 1). Secondary: ROC-AUC. Positive clas
 - `results/phase2_leaderboard_dual.png` — raw vs matched bar chart
 - `results/phase2_top_confusion.png` — confusion matrices for top length-matched and top raw winners
 - `results/metrics.json` — master metrics, keyed by phase
-- `notebooks/phase1_eda_baselines.ipynb`, `notebooks/phase2_multimodel.ipynb` — executed notebooks
-- `reports/day1_phase1_report.md`, `reports/day2_phase2_report.md` — full session research records
+- `notebooks/phase1_eda_baselines.ipynb`, `notebooks/phase2_multimodel.ipynb`, `notebooks/phase3_feature_engineering.ipynb` — executed notebooks
+- `reports/day1_phase1_report.md`, `reports/day2_phase2_report.md`, `reports/day3_phase3_report.md` — full session research records
+- `results/phase3_ngram_ablation.csv`, `phase3_ngram_saturation.png` — Phase 3 Section 1 ablation grid
+- `results/phase3_nli_persent_scores.csv`, `phase3_nli_threshold_sweep.png`, `phase3_nli_features.npz` — Phase 3 Section 2 per-sentence NLI features (cached for Phase 4 reuse)
+- `results/phase3_stacking.csv` — Phase 3 Section 3 stacking results
+- `results/phase3_error_summary.csv`, `phase3_error_breakdown.png` — Phase 3 Section 4 error analysis
+- `results/phase3_leaderboard.csv`, `phase3_cumulative_leaderboard.csv`, `phase3_leaderboard.png` — Phase 3 Section 5 honest leaderboard
