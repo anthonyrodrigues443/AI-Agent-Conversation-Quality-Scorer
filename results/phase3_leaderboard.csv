@@ -1,0 +1,5 @@
+model,paradigm,split,n,accuracy,macro_f1,roc_auc,phase
+"char_best_p3 [(2, 5) mf=25000 sub=True]",char-ngram + logistic (tuned),length_matched,524,0.7958015267175572,0.7941453994059486,0.7987879494201968,3
+nli_persent_maxpool,cross-encoder NLI per-sentence (zero-shot),length_matched,524,0.6393129770992366,0.624224533392019,0.7027708175514247,3
+meta_stack [char+sbert+nli],stacked LogReg meta over 3 paradigms,length_matched,524,0.8053435114503816,0.80442037470726,0.8475467630091487,3
+mean_blend [char+sbert+nli],unweighted mean of 3 probs,length_matched,524,0.7900763358778626,0.7899661847014925,0.8708991317522289,3
