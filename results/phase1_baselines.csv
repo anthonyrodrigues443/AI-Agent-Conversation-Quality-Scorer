@@ -1,0 +1,6 @@
+rank,model,accuracy,balanced_accuracy,macro_f1,precision_pos,recall_pos,roc_auc,fit_seconds,threshold
+1,2_length_only_logreg,0.9437,0.9438,0.9437,0.9521,0.9345,0.9713,0.015,
+2,3_tfidf_answer_logreg,0.9193,0.9192,0.9191,0.951,0.884,0.9678,0.312,
+3,4_tfidf_q_plus_a_logreg,0.7887,0.7888,0.788,0.8265,0.731,0.866,3.468,
+4,5_lexical_overlap_threshold,0.714,0.714,0.7026,0.6538,0.9095,0.5933,0.0,0.95
+5,1_majority_class,0.5,0.5,0.3333,0.0,0.0,0.5,0.001,
