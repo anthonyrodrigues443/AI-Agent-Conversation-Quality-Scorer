@@ -1,0 +1,15 @@
+model,paradigm,split,n,accuracy,macro_f1,roc_auc,phase,auroc
+char_opt + entity (7) stack,char-prob + 7 entity features + LogReg meta,,,0.0,0.8518616425631593,,4,0.8927364372705553
+FULL stack [char_opt + sbert + nli + 7 entity],10-feat LogReg meta,,,0.8492366412213741,0.8480138930193453,,4,0.9059641046559057
+meta_stack [char_opt + sbert + nli],3-feat LogReg meta (Phase 3 stack + tuned char),,,0.8301526717557252,0.8293015918332985,,4,0.8586183788823496
+"char_opt (Optuna, thr-tuned)","char-ngram + LogReg, Optuna(100) + threshold",,,0.8244274809160306,0.8231807511737089,,4,0.8158615465299225
+meta_stack [char+sbert+nli],stacked LogReg meta over 3 paradigms,length_matched,524.0,0.8053435114503816,0.80442037470726,0.8475467630091487,3,
+"char_best_p3 [(2, 5) mf=25000 sub=True]",char-ngram + logistic (tuned),length_matched,524.0,0.7958015267175572,0.7941453994059486,0.7987879494201968,3,
+mean_blend [char+sbert+nli],unweighted mean of 3 probs,length_matched,524.0,0.7900763358778626,0.7899661847014925,0.8708991317522289,3,
+char35_logreg,char-ngram + logistic,length_matched,524.0,0.7805343511450382,0.7789037647999824,0.7970689353767263,2,
+sbert_paired_logreg,paired embed (k⊕a + cos + diff) + linear,length_matched,524.0,0.7652671755725191,0.7643324911238926,0.7951605384301614,2,
+sbert_answer_logreg,sentence-embed + linear,length_matched,524.0,0.7614503816793893,0.7598330931664266,0.7886923838937124,2,
+tfidf12_svc,word-ngram + linear hinge,length_matched,524.0,0.7442748091603053,0.741102901051576,0.7931793019054834,2,
+sbert_paired_xgb,paired embed + XGBoost,length_matched,524.0,0.7309160305343512,0.729970944575407,0.7892605326029951,2,
+nli_deberta_zeroshot,cross-encoder NLI (zero-shot),length_matched,524.0,0.7137404580152672,0.7137237762237763,0.7188683643144339,2,
+nli_persent_maxpool,cross-encoder NLI per-sentence (zero-shot),length_matched,524.0,0.6393129770992366,0.624224533392019,0.7027708175514247,3,
