@@ -4,28 +4,39 @@ Hallucination detection on LLM-generated answers, benchmarked against the publis
 HaluEval-QA leaderboard and a length-matched honest split that controls for the
 benchmark's dominant dataset artifact.
 
-> **Status: Phase 3 complete (2026-05-14).** Phase 1 exposed a benchmark artifact:
+> **Status: Phase 4 complete (2026-05-15).** Phase 1 exposed a benchmark artifact:
 > a 4-feature **length-only LogReg hits macro F1 = 0.944** on raw HaluEval-QA,
 > versus the published ChatGPT zero-shot judge at 62.6%. Phase 2 introduced a
 > 524-row **length-matched honest split** and ran 6 paradigms — char-ngram +
-> LogReg won the honest leaderboard at **F1 = 0.7789**, and zero-shot cross-encoder
-> NLI was the only paradigm whose F1 *improved* (+0.12) when length was controlled.
-> Phase 3 ran a 48-config char-ngram ablation, a per-sentence NLI experiment, a
-> 3-model stacking experiment, and an error analysis on the char-ngram champion.
-> **Stacking [char + SBERT + zero-shot NLI] hits matched F1 = 0.8044** —
-> the weakest model in the stack (NLI at F1 = 0.62) is the one carrying the +0.026
-> lift via negative error correlation. See
-> [`reports/day3_phase3_report.md`](reports/day3_phase3_report.md) for the latest
+> LogReg won the honest leaderboard at **F1 = 0.7789**. Phase 3 added a 48-config
+> char-ngram ablation, per-sentence NLI, 3-model stacking, and error analysis;
+> **stacking [char + SBERT + zero-shot NLI] reached matched F1 = 0.8044.** Phase 4
+> ran a 100-trial Optuna joint search, added a 7-feature "entity-string"
+> descriptor, and ran a frontier-LLM head-to-head on the original HaluEval judge
+> protocol. **`char_opt + 7 entity features` hits matched F1 = 0.8519** — the new
+> overall champion. **Claude Opus 4.6 and Codex GPT-5.5 both hit 0.940 zero-shot
+> on the n=50 stratified subsample** (vs the published HaluEval ChatGPT-2023
+> baseline of 62.6%), closing a +31 accuracy-point gap. The custom 8-coef stack
+> ties Claude Haiku 4.5 at 0.900 accuracy at **7,800× lower latency** and
+> **3,300× lower cost**. See
+> [`reports/day4_phase4_report.md`](reports/day4_phase4_report.md) for the latest
 > research log and [`results/`](results/) for plots and metrics.
 
 ## Current Status
 
-- **Latest phase:** Phase 3 — feature engineering deep dive (2026-05-14)
-- **Best model:** `meta_stack [char + sbert + nli]` — **matched macro F1 = 0.8044**,
-  accuracy 0.8053, AUROC 0.8475 on the 524-row length-matched honest split
-- **Best single-model:** `char_best_p3` ((2,5) × 25k × sublinear) — matched F1 = 0.7941
-- **Models compared so far:** 11 in the cumulative honest leaderboard + 48 char-ngram
-  ablation configs + 3 stacking variants = **62 distinct experiments** across 3 phases
+- **Latest phase:** Phase 4 — Optuna tune + entity features + LLM head-to-head (2026-05-15)
+- **Best model:** `char_opt + 7 entity features (LogReg stack)` — **matched
+  macro F1 = 0.8519**, accuracy 0.8512, AUROC 0.8927 on the 524-row length-matched
+  honest split. Inference: 1.2 ms / $0.0001 per 1k preds.
+- **Best single-model:** `char_opt` (Optuna `(2,4) × 10k × min_df=5 × C=4.85`) —
+  matched F1 = 0.8250 (default threshold 0.50)
+- **Frontier comparison (n=50 stratified, HaluEval judge protocol):** Claude
+  Opus 4.6 = 0.940, Codex GPT-5.5 = 0.940, Claude Haiku 4.5 = custom = 0.900.
+  Custom is 7,800× faster than Haiku at identical accuracy, 49,500× cheaper
+  than Opus at a 4-point accuracy gap.
+- **Models compared so far:** 62 from Phases 1–3 + 100 Optuna trials + 5 Phase 4
+  stacking variants + 3 frontier LLM evals = **170 distinct experiments** across
+  4 phases
 
 ## Domain
 
@@ -50,24 +61,29 @@ split is saturated by a 4.7× answer-length asymmetry between classes.
    4-feature length-only LogReg hits 94.4% accuracy on the official test set vs
    the published ChatGPT zero-shot judge at 62.6%. Honest evaluation requires a
    length-matched split.
-2. **Stacking's headline is *which* model carries the lift.** Char-ngram (F1=0.79)
-   and SBERT (F1=0.76) errors correlate at +0.66 — they're learning the same
-   shortcut. Zero-shot NLI (F1=0.62 alone) has error correlations of −0.22 / −0.17
-   with the trained models. The meta-LogReg's NLI coefficient (+2.06) is non-zero
-   and positive — the weakest model is the one making the stack work.
-3. **Char-ngram saturates at 25k features, not 200k.** Phase 2 used `(3,5) × 200k`;
-   the Phase 3 48-config ablation showed `(2,5) × 25k × sublinear_tf=True` wins —
-   +0.015 matched F1 with **8× fewer features**. Sublinear-TF lift across the grid
-   averaged +0.0008 (noise).
-4. **Per-sentence NLI max-pool actively hurt** (F1 0.7137 → 0.6242). The HF
-   leaderboard's 0.88-AUROC ceiling for decomposed NLI is for multi-paragraph
-   sources; HaluEval-QA's short HotpotQA-derived passages are too thin per sentence
-   for entailment with deberta-base zero-shot.
-5. **The char-ngram champion's 84 false-negatives are short HotpotQA-style entity
-   strings.** 2.4 mean tokens, 21% have any sentence-ending punctuation, mean
-   predicted P(hallu) = 0.19 — confidently wrong, not borderline. The model has
-   learned "long sentence-shaped response ⇒ hallucination" and gets spoofed by
-   short entity-string hallucinations.
+2. **Frontier LLMs closed the published HaluEval gap by 31 accuracy points.**
+   ChatGPT zero-shot (Li et al., 2023) was 62.6% accuracy. On the same judge
+   protocol over a 50-row stratified subsample of the length-matched honest
+   split, Claude Opus 4.6 and Codex GPT-5.5 both hit **94.0%** zero-shot — no
+   fine-tuning, no RAG. The "specialized model beats frontier" framing no longer
+   cleanly holds for grounding-style hallucination detection in 2026.
+3. **The custom 8-coef stack ties Claude Haiku 4.5 at 90% accuracy.** `char_opt
+   + 7 entity features` runs at 1.2 ms / $0.0001 per 1k predictions — Haiku is
+   9.45 s / $0.33 at the same accuracy. That's **7,800× faster and 3,300× cheaper**;
+   versus Opus, it's 4 accuracy points lower at 4,900× faster and **49,500× cheaper**.
+   Pick by deployment budget, not by hype.
+4. **Stacking's "weakest model carries the lift" story was conditional on a weak
+   base.** Phase 3's char + SBERT + zero-shot NLI meta-LogReg added +0.026 F1 over
+   char alone (F1=0.79) via NLI's −0.22 / −0.17 error correlations. Phase 4 with
+   Optuna char_opt (F1=0.825) + 7 entity features hits **F1 = 0.8519** — adding
+   sbert + nli on top of that actively **hurts** (10-feat = 0.8480). The cheap
+   lexical features absorb the marginal signal NLI was providing.
+5. **The char-ngram FN cluster — short entity strings — is partially solved by
+   lexical features, but not closed.** Phase 3's `char_best_p3` had 77 false
+   negatives on matched; Phase 4 `char_opt + entity` recovered 16 of them (recall
+   0.706 → 0.763) and halved FPs (30 → 15). The remaining 61 are short,
+   sentence-shaped, low-knowledge-overlap entity strings — hard cases that
+   lexical features cannot solve without semantic grounding.
 
 ## Phase 1 setup
 
@@ -94,12 +110,14 @@ split is saturated by a 4.7× answer-length asymmetry between classes.
 ├── notebooks/
 │   ├── phase1_eda_baselines.ipynb
 │   ├── phase2_multimodel.ipynb
-│   └── phase3_feature_engineering.ipynb
+│   ├── phase3_feature_engineering.ipynb
+│   └── phase4_tuning_and_llm.ipynb
 ├── results/                    # plots, metrics.json, leaderboards
 └── reports/
     ├── day1_phase1_report.md
     ├── day2_phase2_report.md
-    └── day3_phase3_report.md
+    ├── day3_phase3_report.md
+    └── day4_phase4_report.md
 ```
 
 ## Reproduce
@@ -109,7 +127,7 @@ uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python -m ipykernel install --user --name halueval-scorer
 cd notebooks && ../.venv/bin/jupyter nbconvert --to notebook --execute --inplace \
-    --ExecutePreprocessor.kernel_name=halueval-scorer phase3_feature_engineering.ipynb
+    --ExecutePreprocessor.kernel_name=halueval-scorer phase4_tuning_and_llm.ipynb
 ```
 
 ## License & data
@@ -250,6 +268,60 @@ low base-learner error correlation, which the diversity check explicitly verifie
 **0.8044**, accuracy 0.8053, AUROC 0.8475. Oracle upper bound (perfect routing)
 is 97.9% accuracy — substantial headroom remains for Phase 4 (Optuna tuning,
 LightGBM meta-learner, LLM head-to-head).
+
+</td>
+</tr>
+</table>
+
+### Phase 4: Optuna Tuning + Entity Features + LLM Head-to-Head — 2026-05-15
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** Four experiments — (1) 100-trial Optuna TPE joint search
+over char-TfidfVectorizer + LogReg hyperparameters with a held-out qid-grouped
+val slice; (2) 7-feature "entity-string" descriptor (n_tokens, has_period,
+jaccard_q, jaccard_k, len_chars, frac_capitalized, has_any_punct) stacked with
+the Optuna char champion; (3) full 10-feature stack [char_opt + sbert + nli +
+entity]; (4) frontier-LLM head-to-head — Claude Opus 4.6, Haiku 4.5, Codex
+GPT-5.5 — on a 50-row stratified subsample under the original HaluEval judge
+protocol.<br><br>
+**What worked best:** **`char_opt + 7 entity features` (LogReg meta)** —
+matched macro F1 = **0.8519**, accuracy 0.8512, AUROC 0.8927. FP halved
+(30 → 15) and 16 of Phase 3's 77 FNs recovered. The 8-coef meta runs at
+**1.2 ms** and **$0.0001 per 1k predictions**. Optuna's best char config is
+sparser and more regularized than Phase 3 — vocab 25k → 10k, min_df 2 → 5,
+C 1.0 → 4.85.
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/phase4_llm_vs_custom.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** Frontier LLMs closed the published HaluEval gap by **31
+accuracy points**. The 2023 paper reported ChatGPT zero-shot at 62.6%; Claude
+Opus 4.6 and Codex GPT-5.5 BOTH hit **0.940** zero-shot on the same protocol —
+no fine-tuning, no RAG. The custom 8-coef stack ties Claude Haiku 4.5 at 0.900
+accuracy at **7,800× faster (1.2 ms vs 9.45 s)** and **3,300× cheaper
+($0.0001 vs $0.33 per 1k)**.<br><br>
+**Surprise:** Phase 3's "weakest model carries the stack" finding turned
+conditional on a weak char base. With the Optuna char_opt + 7 entity features
+in place, adding sbert + nli on top actively **hurts** (10-feat F1 = 0.8480
+vs 8-feat = 0.8519). The cheap lexical features absorbed the marginal signal
+Phase 3 attributed to NLI's −0.22 / −0.17 error correlations.<br><br>
+**Research:** Li et al., 2023 — *HaluEval* (EMNLP, arXiv:2305.11747) — the
+exact judge protocol and the 62.6% ChatGPT baseline the frontier head-to-head
+was scored against; Akiba et al., 2019 — *Optuna* (KDD) — TPE joint search
+on a held-out qid-grouped val slice to avoid test leakage during the 100-trial
+tune.<br><br>
+**Best Model So Far:** `char_opt + 7 entity features` (LogReg stack) — matched
+macro F1 = **0.8519**, accuracy 0.8512, AUROC 0.8927. Best single-model:
+`char_opt` (Optuna `(2,4) × 10k × min_df=5 × C=4.85`) — matched F1 = 0.8250.
+Frontier ceiling on n=50 subsample: 0.940 (Opus / GPT-5.5).
 
 </td>
 </tr>
