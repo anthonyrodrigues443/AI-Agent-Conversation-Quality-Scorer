@@ -1,0 +1,7 @@
+,model,accuracy,macro_f1,balanced_acc,precision_hallu,recall_hallu,roc_auc,split
+0,length_only_logreg,0.9437,0.9437,0.9437,0.9521,0.9345,0.9713,raw
+1,answer_length_only_logreg,0.9435,0.9435,0.9435,0.9516,0.9345,0.9717,raw
+2,grounding_overlap_threshold,0.9253,0.9252,0.9252,0.9364,0.9125,0.8989,raw
+3,tfidf_answer_logreg,0.9195,0.9194,0.9195,0.952,0.8835,0.9674,raw
+4,tfidf_q_plus_a_logreg,0.8037,0.8035,0.8037,0.8275,0.7675,0.8809,raw
+5,majority_class,0.5,0.3333,0.5,0.0,0.0,,raw

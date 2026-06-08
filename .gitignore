@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- project-specific ----
+# Raw/processed data (download via data/README.md); keep the data README tracked
+data/raw/
+data/processed/
+!data/README.md
+# Large/transient result caches
+results/*_cache/
