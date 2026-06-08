@@ -65,7 +65,9 @@ punctuation vs **1.4%** of grounded.
 | tfidf_q_plus_a_logreg | 0.8035 | 0.8037 | 0.8809 | adding the question HURT by −0.116 F1 |
 | majority_class | 0.3333 | 0.5000 | — | floor |
 
-**Interpretation:** Every trained baseline crushes the published ChatGPT 0.626 — but that is *because*
+**Interpretation:** Every trained baseline crushes the published ChatGPT 0.626 accuracy (a fair
+comparison despite the differing metric labels: on this perfectly balanced task macro-F1 ≈ accuracy —
+length-only is 0.944 on both, per the table above) — but that is *because*
 of the length leak, not despite it. The question-text experiment (−0.116 F1) is a clean "more features
 ≠ better": the question is shared across an item's two answers, so its tokens are non-discriminative
 noise.

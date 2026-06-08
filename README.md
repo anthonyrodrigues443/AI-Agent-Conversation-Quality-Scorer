@@ -15,7 +15,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 ## Headline (Phase 1)
 
 > **HaluEval-QA is mostly solvable by counting characters — so I built a length-matched control to find out what's real.**
-> A length-only classifier scores **0.944 macro-F1** on the raw split (vs the paper's 0.626 for ChatGPT).
+> A length-only classifier scores **0.944 macro-F1** on the raw split (vs the paper's 0.626 accuracy for ChatGPT — a fair beat: on this balanced task macro-F1≈accuracy, so the length model is 0.944 on both).
 > But on a length-matched control it **collapses to 0.615** — basically chance. The drop *is* the shortcut.
 > The twist: token-overlap with the source, which I assumed was just length in disguise (it correlates at
 > ρ=−0.52), **holds at 0.919** when length is matched. The control is a truth serum — it cleanly separates
