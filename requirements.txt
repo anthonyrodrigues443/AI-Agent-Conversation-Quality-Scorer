@@ -1,0 +1,21 @@
+# AI Agent Conversation Quality Scorer — pinned to the environment Phase 1 was run on
+# (Python 3.14, convo-quality-venv kernel)
+
+# --- Phase 1 core (EDA + baselines) ---
+scikit-learn==1.8.0
+numpy==2.4.2
+pandas==3.0.1
+scipy==1.17.0
+matplotlib==3.10.8
+
+# --- Phase 2+ (multi-model: embeddings, trees, zero-shot NLI) ---
+sentence-transformers==5.5.0
+torch==2.11.0
+transformers==5.8.0
+xgboost==3.2.0
+datasets==4.8.4
+
+# --- notebook execution ---
+jupyter
+nbconvert
+ipykernel

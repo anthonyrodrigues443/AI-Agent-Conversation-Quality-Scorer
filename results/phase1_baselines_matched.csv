@@ -1,0 +1,7 @@
+,model,accuracy,macro_f1,balanced_acc,precision_hallu,recall_hallu,roc_auc,split
+0,grounding_overlap_threshold,0.9195,0.9192,0.9195,0.9824,0.8544,0.916,length_matched
+1,tfidf_answer_logreg,0.7184,0.7131,0.7184,0.8,0.5824,0.7838,length_matched
+2,tfidf_q_plus_a_logreg,0.6935,0.6915,0.6935,0.7306,0.613,0.7394,length_matched
+3,length_only_logreg,0.6169,0.615,0.6169,0.6356,0.5479,0.5993,length_matched
+4,answer_length_only_logreg,0.6169,0.615,0.6169,0.6356,0.5479,0.5984,length_matched
+5,majority_class,0.5,0.3333,0.5,0.0,0.0,,length_matched

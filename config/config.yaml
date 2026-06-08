@@ -1,0 +1,36 @@
+# AI Agent Conversation Quality Scorer — project config
+
+project:
+  name: AI-Agent-Conversation-Quality-Scorer
+  task: agent-response hallucination / grounding-faithfulness classification
+  primary_metric: macro_f1          # ranks every leaderboard in this project
+  secondary_metrics: [accuracy, balanced_acc, precision_hallu, recall_hallu, roc_auc]
+
+dataset:
+  name: HaluEval-QA
+  source: https://raw.githubusercontent.com/RUCAIBox/HaluEval/main/data/qa_data.json
+  citation: "Li et al., HaluEval, EMNLP 2023 (RUCAIBox)"
+  raw_path: data/raw/qa_data.json
+  n_items: 10000
+  n_samples: 20000                  # each item -> grounded(0) + hallucinated(1)
+  labels: {0: grounded, 1: hallucinated}
+  published_chatgpt_accuracy: 0.6259
+
+split:
+  strategy: GroupShuffleSplit       # group by item id so an item's two answers never straddle the split
+  group_key: qid
+  test_size: 0.2
+  random_state: 42
+  qid_file: results/phase1_split_qids.json   # frozen so every phase reuses the same split
+
+length_control:
+  method: per-10char-bin balanced downsample of the test set
+  rationale: >
+    HaluEval-QA hallucinations are ~4.8x longer than grounded entity strings; a length-matched
+    control isolates real grounding signal from the length shortcut. Every leaderboard reports
+    raw AND length-matched macro-F1.
+
+baselines:
+  length_only_logreg: {features: [ans_chars, ans_tokens, q_chars, k_chars]}
+  tfidf_answer_logreg: {ngram_range: [1, 2], min_df: 3, max_features: 50000, C: 1.0}
+  grounding_overlap_threshold: {feature: answer->knowledge token-overlap fraction, tuned_on: train}

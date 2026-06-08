@@ -1,0 +1,122 @@
+[
+  {
+    "model": "majority_class",
+    "accuracy": 0.5,
+    "macro_f1": 0.3333,
+    "balanced_acc": 0.5,
+    "precision_hallu": 0.0,
+    "recall_hallu": 0.0,
+    "roc_auc": null,
+    "split": "raw"
+  },
+  {
+    "model": "length_only_logreg",
+    "accuracy": 0.9437,
+    "macro_f1": 0.9437,
+    "balanced_acc": 0.9437,
+    "precision_hallu": 0.9521,
+    "recall_hallu": 0.9345,
+    "roc_auc": 0.9713,
+    "split": "raw"
+  },
+  {
+    "model": "answer_length_only_logreg",
+    "accuracy": 0.9435,
+    "macro_f1": 0.9435,
+    "balanced_acc": 0.9435,
+    "precision_hallu": 0.9516,
+    "recall_hallu": 0.9345,
+    "roc_auc": 0.9717,
+    "split": "raw"
+  },
+  {
+    "model": "tfidf_answer_logreg",
+    "accuracy": 0.9195,
+    "macro_f1": 0.9194,
+    "balanced_acc": 0.9195,
+    "precision_hallu": 0.952,
+    "recall_hallu": 0.8835,
+    "roc_auc": 0.9674,
+    "split": "raw"
+  },
+  {
+    "model": "tfidf_q_plus_a_logreg",
+    "accuracy": 0.8037,
+    "macro_f1": 0.8035,
+    "balanced_acc": 0.8037,
+    "precision_hallu": 0.8275,
+    "recall_hallu": 0.7675,
+    "roc_auc": 0.8809,
+    "split": "raw"
+  },
+  {
+    "model": "grounding_overlap_threshold",
+    "accuracy": 0.9253,
+    "macro_f1": 0.9252,
+    "balanced_acc": 0.9252,
+    "precision_hallu": 0.9364,
+    "recall_hallu": 0.9125,
+    "roc_auc": 0.8989,
+    "split": "raw"
+  },
+  {
+    "model": "majority_class",
+    "accuracy": 0.5,
+    "macro_f1": 0.3333,
+    "balanced_acc": 0.5,
+    "precision_hallu": 0.0,
+    "recall_hallu": 0.0,
+    "roc_auc": null,
+    "split": "length_matched"
+  },
+  {
+    "model": "length_only_logreg",
+    "accuracy": 0.6169,
+    "macro_f1": 0.615,
+    "balanced_acc": 0.6169,
+    "precision_hallu": 0.6356,
+    "recall_hallu": 0.5479,
+    "roc_auc": 0.5993,
+    "split": "length_matched"
+  },
+  {
+    "model": "answer_length_only_logreg",
+    "accuracy": 0.6169,
+    "macro_f1": 0.615,
+    "balanced_acc": 0.6169,
+    "precision_hallu": 0.6356,
+    "recall_hallu": 0.5479,
+    "roc_auc": 0.5984,
+    "split": "length_matched"
+  },
+  {
+    "model": "tfidf_answer_logreg",
+    "accuracy": 0.7184,
+    "macro_f1": 0.7131,
+    "balanced_acc": 0.7184,
+    "precision_hallu": 0.8,
+    "recall_hallu": 0.5824,
+    "roc_auc": 0.7838,
+    "split": "length_matched"
+  },
+  {
+    "model": "tfidf_q_plus_a_logreg",
+    "accuracy": 0.6935,
+    "macro_f1": 0.6915,
+    "balanced_acc": 0.6935,
+    "precision_hallu": 0.7306,
+    "recall_hallu": 0.613,
+    "roc_auc": 0.7394,
+    "split": "length_matched"
+  },
+  {
+    "model": "grounding_overlap_threshold",
+    "accuracy": 0.9195,
+    "macro_f1": 0.9192,
+    "balanced_acc": 0.9195,
+    "precision_hallu": 0.9824,
+    "recall_hallu": 0.8544,
+    "roc_auc": 0.916,
+    "split": "length_matched"
+  }
+]
