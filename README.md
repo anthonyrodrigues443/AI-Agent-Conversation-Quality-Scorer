@@ -45,6 +45,34 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
    matched control vindicated it (0.925 → 0.919). It's the honest floor.
 4. **Adding the question hurts** (0.919 → 0.804): shared tokens are non-discriminative noise.
 
+## Iteration Summary
+
+### Phase 1: Domain Research + Baselines + Length-Matched Control — 2026-06-08
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** Five baselines + a length-asymmetry probe on HaluEval-QA (20k balanced samples, leak-free GroupShuffleSplit by qid). Headline metric: a 4-feature length-only LogReg hit **0.944 raw macro-F1** vs the paper's 0.626 ChatGPT zero-shot.<br><br>
+**What worked best:** `grounding_overlap_threshold` — the only baseline that reads the source — at **0.919 matched macro-F1**, because it barely moves (−0.006) under the length-matched control while every length model falls off a cliff.
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/phase1_baseline_comparison.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** A length-matched control (answer-length KS 0.874→0.123) is a truth serum — length-only collapses to **0.615** (≈chance) while overlap holds at 0.919. The −0.33 F1 drop *is* the shortcut, made visible.<br><br>
+**Surprise:** Grounding-overlap, which I'd dismissed as length-in-disguise (ρ=−0.52 with length), survived matching intact — at equal lengths grounded answers still overlap the source far more. My going-in assumption was falsified.<br><br>
+**Research:** Li et al., 2023 (HaluEval) — ChatGPT zero-shot = 62.6%, used as the reference floor. "The Illusion of Progress", 2025 — hallucinated text is systematically longer and detectors silently exploit length, so we built a length-matched control to isolate real signal.<br><br>
+**Best Model So Far:** `grounding_overlap_threshold` — 0.919 matched macro-F1 (the honest floor Phase 2+ must beat).
+
+</td>
+</tr>
+</table>
+
 ## Architecture
 
 ```mermaid
