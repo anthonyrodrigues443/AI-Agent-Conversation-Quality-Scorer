@@ -44,6 +44,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 3. **Grounding-overlap is genuine signal, not a length artifact** — I was wrong to assume otherwise; the
    matched control vindicated it (0.925 → 0.919). It's the honest floor.
 4. **Adding the question hurts** (0.919 → 0.804): shared tokens are non-discriminative noise.
+5. **(Phase 2) Richer paradigms can't beat the 1-line rule.** Six paradigms — three embedding encoders and a 184M-param zero-shot NLI cross-encoder — all collapse to overlap under length matching (champion holds at 0.9244). NLI even *inverts*, scoring hallucinations as more-entailed than grounded answers. The bottleneck is features, not models.
 
 ## Iteration Summary
 
@@ -68,6 +69,32 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 **Surprise:** Grounding-overlap, which I'd dismissed as length-in-disguise (ρ=−0.52 with length), survived matching intact — at equal lengths grounded answers still overlap the source far more. My going-in assumption was falsified.<br><br>
 **Research:** Li et al., 2023 (HaluEval) — ChatGPT zero-shot = 62.6%, used as the reference floor. "The Illusion of Progress", 2025 — hallucinated text is systematically longer and detectors silently exploit length, so we built a length-matched control to isolate real signal.<br><br>
 **Best Model So Far:** `grounding_overlap_threshold` — 0.919 matched macro-F1 (the honest floor Phase 2+ must beat).
+
+</td>
+</tr>
+</table>
+
+### Phase 2: Multi-Paradigm Showdown — Lexical vs. Meaning — 2026-06-09
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** Six paradigms across the lexical→semantic spectrum (char/word n-grams, sentence-embedding cosine ± XGBoost, a 184M-param zero-shot DeBERTa-v3 NLI cross-encoder) on the frozen Phase-1 split, each scored raw **and** on a rigorous nearest-length matched control (answer-length KS 0.874→0.122). The question: with the length crutch gone, does a model that reads *meaning* beat the 1-line overlap rule?<br><br>
+**What worked best:** Nothing beat it — `grounding_overlap_threshold` stays champion at **0.9244 matched macro-F1** (drop just 0.0008), clearing the 0.919 bar, because every richer model collapses to overlap once length is matched (XGBoost importance: overlap 0.942 vs embeddings ≈ 0).
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/phase2_dual_leaderboard.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** The bottleneck is **features, not models** — every learned paradigm collapses to the lexical-overlap signal; a 184M-param zero-shot NLI model and three embedding encoders all fail to beat a one-line rule.<br><br>
+**Surprise:** Hypothesis inverted — zero-shot NLI lands near the *bottom*. It assigns *higher* entailment to hallucinations (0.258) than to grounded answers (0.208): bare-entity spans ("Arthur's Magazine") read as non-entailed while fluent entity-reusing hallucinations read as entailed. NLI is confounded by answer **form** — the mirror image of the length shortcut.<br><br>
+**Research:** Laban et al., 2022 (SummaC) — NLI-as-factual-consistency is the textbook zero-shot grounding check, so we tested it and it failed on built-to-be-grounded hallucinations. "Representation-based detectors fail OOD," 2025 — a never-trained-on-HaluEval detector is the cleanest test of transferable signal, so we ran NLI/embeddings zero-shot.<br><br>
+**Best Model So Far:** `grounding_overlap_threshold` — 0.9244 matched macro-F1 (still the champion Phase 3 must beat).
 
 </td>
 </tr>
@@ -108,7 +135,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 | Phase | Focus | Status |
 |------:|-------|:------:|
 | 1 | Domain research + dataset + EDA + baselines + length-matched control | ✅ |
-| 2 | 4–6 paradigms (n-grams, SBERT, zero-shot NLI) × raw vs matched | ⏳ |
+| 2 | 4–6 paradigms (n-grams, SBERT, zero-shot NLI) × raw vs matched | ✅ |
 | 3 | Feature engineering + top-model deep dive | ⏳ |
 | 4 | Hyperparameter tuning + error analysis | ⏳ |
 | 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ⏳ |

@@ -1,0 +1,10 @@
+rank,model,macro_f1_raw,recall_hallu_raw,roc_auc,macro_f1_matched,recall_hallu_matched,drop
+1,grounding_overlap_threshold,0.9252,0.9125,0.8989,0.9244,0.8531,0.0008
+2,embed_xgb_semantic,0.9582,0.9265,0.9803,0.889,0.8007,0.0692
+3,embed_xgb_plus_length,0.9742,0.9705,0.9974,0.8671,0.8741,0.1071
+4,char_ngram_logreg,0.9515,0.932,0.9793,0.7636,0.6713,0.1879
+5,nli_zeroshot_qa,0.6427,0.589,0.6711,0.6866,0.6469,-0.0439
+6,word_tfidf_ans_know,0.6951,0.7145,0.7683,0.6311,0.6189,0.064
+7,length_only_logreg,0.9437,0.9345,0.9713,0.6174,0.5559,0.3263
+8,nli_zeroshot_ans,0.5197,0.606,0.5406,0.5885,0.6294,-0.0688
+9,embed_cosine_e5-base,0.3359,0.003,0.2291,0.3411,0.007,-0.0052
