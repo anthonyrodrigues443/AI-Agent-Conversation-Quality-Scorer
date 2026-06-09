@@ -1,0 +1,4 @@
+encoder,dim,thr,raw_macroF1,matched_macroF1,encode_s
+e5-base,768,0.681,0.3359,0.3411,0.4
+MiniLM-L6,384,0.966,0.3333,0.3333,0.4
+bge-small,384,0.332,0.3332,0.3333,0.4
