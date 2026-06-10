@@ -84,4 +84,57 @@ length 0.90, char-ngram 0.89, xgb+len 0.68, word-tfidf 0.57, xgb-sem 0.30, **NLI
 entity-reuse hallucinations overlap misses.
 
 ---
-*(Phase 3+ appended on subsequent sessions.)*
+
+## Phase 3 — Engineered claim-relation features + a fine-tuned cross-encoder (2026-06-10)
+
+**Same frozen split + same nearest-length matched control (n=572, KS 0.123).** Built 12 engineered features
+(verbatim grounding, numeric/date, sentence-concentration, novelty/IDF, polarity); fine-tuned a 22M
+cross-encoder on HaluEval's own (knowledge, answer) supervision. Bar to beat: **0.9244 matched**.
+
+### Master leaderboard — ranked by length-matched macro-F1
+| Rank | Model | raw F1 | **matched F1** | drop | beats 0.9244 |
+|---|---|---:|---:|---:|:--:|
+| 1 | **eng_xgboost** (overlap ⊕ 12 eng) | 0.9967 | **0.9808** | 0.016 | ✅ +0.056 |
+| 1 | **eng_only_xgboost** (12 eng, no overlap) | 0.9967 | **0.9808** | 0.016 | ✅ +0.056 |
+| 3 | hybrid_ce_plus_eng | 0.9960 | 0.9790 | 0.017 | ✅ |
+| 4 | eng_logreg | 0.9917 | 0.9720 | 0.020 | ✅ |
+| 5 | ce_minilm_l6_finetuned (22M) | 0.9935 | 0.9633 | 0.030 | ✅ |
+| 6 | grounding_overlap_threshold (Phase-2 bar) | 0.9252 | 0.9244 | 0.001 | — |
+
+### Single-feature probe (each feature thresholded alone, matched control)
+lcs_token_ratio **0.9843** · is_substr 0.9825 · lcs_char_ratio 0.9825 · sent_overlap_max 0.9247 ·
+ground_overlap 0.9244 · idf_overlap 0.9244 · novel_overlap 0.852 · overlap_spread/numeric/negation 0.38–0.43 (≈chance).
+A **single** verbatim-contiguity feature beats the bar.
+
+### Entity-reuse rescue (overlap missed 175/1054; recall 0.834)
+hybrid **0.994 recall, rescues 96.6%** of overlap's 175 misses · eng_xgboost 0.991 / 0.949 · CE 0.989 / 0.949 · overlap 0.834 / 0.000.
+
+### Honesty check — form-ambiguous slice (grounded answer not a verbatim span; n=190, balanced)
+| Model | form-ambiguous F1 | full matched F1 |
+|---|---:|---:|
+| ce_minilm_l6_finetuned | 0.9947 | 0.9633 |
+| eng_xgboost | 0.9947 | 0.9808 |
+| hybrid_ce_plus_eng | 0.9895 | 0.9790 |
+| **grounding_overlap_threshold** | **0.3286** | 0.9244 |
+
+**Findings:**
+1. **Bottleneck = features, not models.** `eng_only_xgboost` (no overlap feature) **ties** `eng_xgboost` at
+   0.9808 — the engineered features fully *subsume* the Phase-2 champion. XGB importance: is_substr 0.795,
+   lcs_token_ratio 0.116, lcs_char_ratio 0.060, all else < 0.03.
+2. **A single feature beats the bar** — longest common token run (0.9843). Verbatim contiguity, not semantics.
+3. **Fine-tuning rescued the meaning model:** zero-shot NLI 0.687 → fine-tuned MiniLM-L6 CE **0.963** (+0.276),
+   clearing the lexical bar (Luna / "1-to-5" thesis holds in-domain).
+4. **Entity-reuse target crushed:** overlap 0.834 → hybrid 0.994 recall; 96.6% of overlap's misses rescued.
+5. **(Self-correction) The verbatim win is partly answer-form.** On the form-ambiguous slice the overlap
+   champion collapses to **0.33** (chance); only the fine-tuned CE / engineered ensemble hold (≈0.99) — they
+   are what actually read grounding when form is stripped.
+
+**What didn't work:** numeric/date/negation features in isolation (≈chance, <2% XGB importance — HaluEval
+hallucinations reformulate rather than swap a checkable number); `overlap_spread` alone (0.43, below chance);
+fine-tuning deberta-v3-base (MPS CPU-fallback, >45 min/epoch — the 22M model sufficed).
+
+**Bar carried to Phase 4:** champion `eng_xgboost`/hybrid at **0.9808 matched**; focus shifts from raw score
+(near-saturated) to calibration, operating point for the entity-reuse minority, and a standing **form-ambiguous** control.
+
+---
+*(Phase 4+ appended on subsequent sessions.)*
