@@ -1,0 +1,7 @@
+rank,model,macro_f1_raw,recall_hallu_raw,roc_auc,macro_f1_matched,recall_hallu_matched,drop,beats_bar
+1,eng_xgboost,0.9967,0.994,0.9975,0.9808,0.9615,0.0159,True
+2,eng_only_xgboost,0.9967,0.994,0.9975,0.9808,0.9615,0.0159,True
+3,hybrid_ce_plus_eng,0.996,0.996,0.9995,0.979,0.9755,0.017,True
+4,eng_logreg,0.9917,0.9915,0.9968,0.972,0.9441,0.0197,True
+5,ce_minilm_l6_finetuned,0.9935,0.9905,0.9989,0.9633,0.9441,0.0302,True
+6,grounding_overlap_threshold,0.9252,0.9125,0.8989,0.9244,0.8531,0.0008,False

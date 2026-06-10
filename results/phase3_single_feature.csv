@@ -1,0 +1,14 @@
+rank,feature,raw_F1,matched_F1,drop
+1,lcs_token_ratio,0.9665,0.9843,-0.0178
+2,is_substr,0.9737,0.9825,-0.0088
+3,lcs_char_ratio,0.9737,0.9825,-0.0088
+4,sent_overlap_max,0.9377,0.9247,0.0131
+5,ground_overlap,0.9252,0.9244,0.0008
+6,idf_overlap,0.9255,0.9244,0.0011
+7,novel_overlap,0.8696,0.8519,0.0177
+8,overlap_spread,0.6065,0.4316,0.1749
+9,num_frac_in_know,0.4461,0.4203,0.0257
+10,n_num_missing,0.4461,0.4203,0.0257
+11,neg_mismatch,0.4306,0.3958,0.0349
+12,year_mismatch,0.3932,0.3819,0.0113
+13,ans_has_neg,0.4252,0.3819,0.0433

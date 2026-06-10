@@ -1,0 +1,7 @@
+model,form_hard_F1,full_matched_F1,form_collapse
+eng_xgboost,0.9947,0.9808,-0.0139
+eng_only_xgboost,0.9947,0.9808,-0.0139
+ce_minilm_l6_finetuned,0.9947,0.9633,-0.0314
+hybrid_ce_plus_eng,0.9895,0.979,-0.0105
+eng_logreg,0.9152,0.972,0.0568
+grounding_overlap_threshold,0.3286,0.9244,0.5958

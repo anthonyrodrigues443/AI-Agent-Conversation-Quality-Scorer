@@ -224,3 +224,8 @@ data/processed/
 !data/README.md
 # Large/transient result caches
 results/*_cache/
+
+# Model artifacts (large binaries; regenerate by executing the notebooks)
+models/*
+!models/.gitkeep
+!models/model_card.md

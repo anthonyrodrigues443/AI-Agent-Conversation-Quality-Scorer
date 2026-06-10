@@ -1,0 +1,7 @@
+model,recall_easy,recall_entity_reuse,rescued_overlap_misses
+hybrid_ce_plus_eng,0.998,0.994,0.966
+eng_logreg,0.992,0.991,0.949
+eng_xgboost,0.997,0.991,0.949
+eng_only_xgboost,0.997,0.991,0.949
+ce_minilm_l6_finetuned,0.993,0.989,0.949
+grounding_overlap_threshold,1.0,0.834,0.0

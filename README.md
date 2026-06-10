@@ -12,6 +12,21 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 ---
 
+## Headline (Phase 3 — latest)
+
+> **Phase 2 said a one-line lexical rule beats everything. Phase 3 says: that rule was mostly a *form* detector.**
+> Engineered claim-relation features hit **0.9808** length-matched macro-F1 (the Phase-2 bar was 0.9244) — and
+> dropping the old overlap feature changes *nothing* (0.9808 → 0.9808): the new features subsume it. A single
+> feature, the longest common *token run* between answer and passage, beats the bar alone (0.9843).
+> Then the twist: I fine-tuned the 22M cross-encoder the zero-shot NLI version *lost* with in Phase 2 — it jumps
+> from **0.687 → 0.963**, past the lexical rule. And the honesty check seals it — on answers where the grounded
+> text **isn't a verbatim span** (so "form" can't leak the label), the old overlap champion **collapses to 0.33
+> (chance)** while the fine-tuned cross-encoder holds at **0.99**. The thing that actually *reads grounding* was
+> the trained model all along; the lexical rule was reading answer shape.
+> On the entity-reuse hallucinations overlap missed (175 of them), the hybrid catches **99.4%** and rescues **96.6%**.
+
+![Phase 3 leaderboard](results/phase3_leaderboard.png)
+
 ## Headline (Phase 1)
 
 > **HaluEval-QA is mostly solvable by counting characters — so I built a length-matched control to find out what's real.**
@@ -45,6 +60,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
    matched control vindicated it (0.925 → 0.919). It's the honest floor.
 4. **Adding the question hurts** (0.919 → 0.804): shared tokens are non-discriminative noise.
 5. **(Phase 2) Richer paradigms can't beat the 1-line rule.** Six paradigms — three embedding encoders and a 184M-param zero-shot NLI cross-encoder — all collapse to overlap under length matching (champion holds at 0.9244). NLI even *inverts*, scoring hallucinations as more-entailed than grounded answers. The bottleneck is features, not models.
+6. **(Phase 3) The right features beat the bar — and a fine-tuned cross-encoder finally reads grounding.** Engineered claim-relation features reach **0.9808** matched (vs 0.9244), and an *engineered-only* model that drops the Phase-2 overlap feature ties it exactly — the features subsume the old champion. Fine-tuning lifts the cross-encoder from the zero-shot floor (0.687) to **0.963**. The self-correction: on a **form-ambiguous** control (grounded answer isn't a verbatim span), the overlap champion **collapses to 0.33** while the fine-tuned CE holds at 0.99 — overlap was substantially a *form* detector, the trained model reads grounding.
 
 ## Iteration Summary
 
@@ -100,6 +116,32 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
+### Phase 3: Feature Engineering + a Fine-Tuned Cross-Encoder — 2026-06-10
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** 12 engineered claim-relation features (verbatim-span grounding, numeric/date, sentence-concentration, IDF-weighted overlap, negation), a combined LogReg/XGB head, and a **HaluEval-fine-tuned** 22M cross-encoder (`ms-marco-MiniLM-L-6-v2`) — all on the frozen split + the same nearest-length matched control (n=572). The bar: beat Phase-2 overlap (0.9244 matched) and catch the 175 entity-reuse hallucinations it missed.<br><br>
+**What worked best:** `eng_xgboost` at **0.9808 matched** (+0.056 over the bar); the hybrid CE⊕eng gets the best hallucination recall (0.9755) and rescues **96.6%** of overlap's 175 misses.
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/phase3_entity_reuse_rescue.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** The bottleneck was **features, not models** — an engineered-only model (no overlap feature) ties the full one at 0.9808, so the new features *subsume* the Phase-2 champion. A single feature, longest common token run, beats the bar alone (0.9843).<br><br>
+**Surprise (self-correction):** On a **form-ambiguous** control (grounded answer isn't a verbatim span), the Phase-2 overlap champion **collapses to 0.33 (chance)** while the fine-tuned cross-encoder holds at **0.99**. Overlap was substantially a *form* detector; the trained model reads grounding. Fine-tuning also lifts the CE from the zero-shot floor 0.687 → **0.963**.<br><br>
+**Research:** Belyi et al., 2024 (Luna) + "On a Scale from 1 to 5", 2024 — fine-tuned cross-encoders beat zero-shot/LLMs in-domain, so we fine-tuned on HaluEval's own supervision. "Beyond ROUGE", 2025 + HALT-RAG, 2025 — engineered lexical features + a learned head over overlap⊕NLI.<br><br>
+**Best Model So Far:** `eng_xgboost` / hybrid — **0.9808 matched macro-F1** (the champion Phase 4 must beat).
+
+</td>
+</tr>
+</table>
+
 ## Architecture
 
 ```mermaid
@@ -109,16 +151,20 @@ flowchart LR
     C --> D[Baselines<br/>length · tfidf · grounding-overlap]
     D --> E[Length-matched control<br/>KS 0.87 → 0.12]
     E --> F[Honest leaderboard<br/>raw vs matched]
+    F --> G[Phase 3: engineered features<br/>+ fine-tuned cross-encoder]
+    G --> H[Form-ambiguous control<br/>form ≠ grounding]
 ```
 
 ## Repo layout
 ```
-notebooks/phase1_eda_baselines.ipynb   # the Phase 1 experiment (executed, 40 cells)
-config/config.yaml                     # dataset, split, metric config
-data/README.md                         # HaluEval-QA download + license
-results/                               # leaderboards (csv/json), metrics.json, figures
-reports/day1_phase1_report.md          # full Phase 1 research report
-results/EXPERIMENT_LOG.md              # cumulative master log
+notebooks/phase1_eda_baselines.ipynb        # Phase 1 experiment (executed, 40 cells)
+notebooks/phase2_multimodel.ipynb           # Phase 2 — six paradigms × raw vs matched
+notebooks/phase3_features_crossencoder.ipynb # Phase 3 — engineered features + fine-tuned CE
+config/config.yaml                          # dataset, split, metric config
+data/README.md                              # HaluEval-QA download + license
+results/                                    # leaderboards (csv/json), metrics.json, figures
+reports/day{1,2,3}_phase{1,2,3}_report.md   # full per-phase research reports
+results/EXPERIMENT_LOG.md                   # cumulative master log
 requirements.txt
 ```
 
@@ -136,7 +182,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 |------:|-------|:------:|
 | 1 | Domain research + dataset + EDA + baselines + length-matched control | ✅ |
 | 2 | 4–6 paradigms (n-grams, SBERT, zero-shot NLI) × raw vs matched | ✅ |
-| 3 | Feature engineering + top-model deep dive | ⏳ |
+| 3 | Feature engineering + fine-tuned cross-encoder + form-ambiguous control | ✅ |
 | 4 | Hyperparameter tuning + error analysis | ⏳ |
 | 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ⏳ |
 | 6 | Production pipeline + Streamlit UI | ⏳ |
@@ -146,3 +192,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 - Li et al. *HaluEval.* EMNLP 2023.
 - *The Illusion of Progress: Re-evaluating Hallucination Detection in LLMs.* arXiv:2508.08285 (2025).
 - *Representation-based Broad Hallucination Detectors Fail to Generalize OOD.* arXiv:2509.19372 (2025).
+- Belyi et al. *Luna: An Evaluation Foundation Model to Catch LM Hallucinations with High Accuracy and Low Cost.* arXiv:2406.00975 (2024).
+- *On a Scale from 1 to 5: Quantifying Hallucination in Faithfulness Evaluation.* arXiv:2410.12222 (2024).
+- *Beyond ROUGE: N-Gram Subspace Features for LLM Hallucination Detection.* arXiv:2509.05360 (2025).
+- *HALT-RAG: Hallucination Detection with Calibrated NLI Ensembles and Abstention.* arXiv:2509.07475 (2025).
