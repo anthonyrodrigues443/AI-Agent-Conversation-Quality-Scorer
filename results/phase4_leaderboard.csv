@@ -1,0 +1,7 @@
+rank,model,raw_f1,matched_f1,cv_f1,beats_0.9808
+1,"eng_xgboost (default, Phase-3)",0.9967,0.9808,0.9951,False
+2,eng_xgboost (Optuna-tuned),0.9967,0.9808,0.9949,False
+3,eng_lightgbm,0.9967,0.9808,0.9949,False
+4,eng_catboost,0.9967,0.9808,0.9951,False
+5,eng_logreg (C=0.03),0.9927,0.979,0.991,False
+6,grounding_overlap (Phase-2 bar),0.9252,0.9244,,False

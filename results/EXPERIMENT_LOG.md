@@ -137,4 +137,66 @@ fine-tuning deberta-v3-base (MPS CPU-fallback, >45 min/epoch — the 22M model s
 (near-saturated) to calibration, operating point for the entity-reuse minority, and a standing **form-ambiguous** control.
 
 ---
-*(Phase 4+ appended on subsequent sessions.)*
+
+## Phase 4 — Tuning, calibration, operating points & error analysis (2026-06-11)
+
+**Same frozen split + matched control.** CV = **StratifiedGroupKFold(4) by `qid`** (group-disjoint, leakage-free).
+The question was *not* "raise the score" (it's saturated) but "is anything left to move it, and where does it
+still fail." Answer: nothing moves it; one residual failure mode remains.
+
+### 4.1 Optuna tuning of the XGBoost champion (9 knobs, grouped-CV objective)
+| | CV F1 | raw F1 | matched F1 |
+|---|---:|---:|---:|
+| DEFAULT (Phase-3) | 0.9951 | 0.9967 | 0.9808 |
+| TUNED (best of 11 trials) | 0.9949 | 0.9967 | 0.9808 |
+| **Δ** | **−0.0002** | **+0.0000** | **+0.0000** |
+Top-10 trials all sit at CV ≈ 0.9949 across depth 3→10, lr 0.019→0.29, 200→800 trees — a **flat ridge**.
+
+### 4.2 Gradient-boosting family head-to-head (each Optuna-tuned)
+| Rank | Model | CV F1 | raw F1 | matched F1 |
+|---|---|---:|---:|---:|
+| 1 | eng_xgboost (tuned) | 0.9949 | 0.9967 | **0.9808** |
+| 2 | eng_lightgbm (tuned) | 0.9949 | 0.9967 | **0.9808** |
+| 3 | eng_catboost (tuned) | 0.9951 | 0.9967 | **0.9808** |
+| 4 | eng_logreg (C=0.03) | 0.9910 | 0.9927 | 0.9790 |
+Three GB implementations land on the **exact same** numbers; a linear head is within 0.0018 matched.
+
+### 4.3 Calibration (uncalibrated vs Platt vs isotonic; group-disjoint calibration split)
+| Calibration | ECE (15-bin) | Brier | macro-F1@0.5 |
+|---|---:|---:|---:|
+| **uncalibrated** | **0.0041** | 0.0034 | 0.9967 |
+| platt | 0.0101 | 0.0033 | 0.9967 |
+| isotonic | 0.0041 | 0.0032 | 0.9967 |
+Already calibrated; isotonic = no change, **Platt 2.5× worse**. Textbook "boosting needs calibration" does not transfer.
+
+### 4.4 Operating points (full-train champion; AUPRC 0.9976, AUROC 0.9975)
+F1-optimal threshold = **0.163, not 0.5**, but bimodal scores collapse **all four** operating points
+(max-F1 / high-recall / high-precision / cost-optimal FN:FP=5:1) to one point: precision 0.9995, recall 0.994,
+**entity-reuse-minority recall 0.9915**. No precision–recall tradeoff to navigate.
+
+### 4.5 Error analysis (raw test: 1 FP, 12 FN of 4,000)
+**10 of 12 FN are verbatim substrings of the knowledge** (9 at overlap=1.0), scored P≈0.01. They are
+grounded-but-*irrelevant* — a verbatim span that is the wrong answer to the question (e.g. *"From Eden" →
+"Take Me To Church"*). Error rate flat across overlap/length quartiles; the only live axis is `grounded_non_verbatim`
+(form-ambiguous) at 1.05% vs `grounded_verbatim` 0.00%.
+
+### 4.6 Learning curve — matched-F1 within 0.005 of max by **800 rows (5% of train)**. Data-saturated.
+
+**Findings:**
+1. **Tuning is a no-op** (+0.0000 matched; flat objective ridge) — the model is feature-bound, proven by exhaustion.
+2. **The learner is interchangeable** — XGB = LGBM = CatBoost = 0.9967/0.9808; logreg within 0.0018.
+3. **Already calibrated; Platt hurts** — ECE 0.0041, isotonic no change, Platt 0.0101.
+4. **No operating-point tradeoff** — bimodal scores, one dominating threshold, entity-reuse recall 0.9915.
+5. **The ceiling is question-relevance, not grounding** — 10/12 misses are verbatim-but-wrong; no grounding
+   feature can catch them by construction.
+6. **Data-saturated at 5%** — 20× more data does not help.
+
+**What didn't work:** Optuna (flat ridge), Platt scaling (worsened ECE), threshold-tuning as a lever (correct
+optimum 0.163 but inert — scores are separated).
+
+**Bar carried to Phase 5:** still **0.9808 matched**. The only component that could move it is a *question→answer
+relevance* signal aimed squarely at the 10 verbatim-but-wrong misses — plus the frontier-LLM head-to-head and a
+one-feature-out ablation.
+
+---
+*(Phase 5+ appended on subsequent sessions.)*
