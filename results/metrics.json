@@ -957,5 +957,246 @@
         }
       ]
     }
+  },
+  "phase4": {
+    "dataset": "HaluEval-QA",
+    "primary_metric": "macro_f1",
+    "cv": "StratifiedGroupKFold(4, by qid)",
+    "default_champion": {
+      "cv_f1": 0.9951,
+      "raw_f1": 0.9967,
+      "matched_f1": 0.9808
+    },
+    "tuned_champion": {
+      "params": {
+        "n_estimators": 500,
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "min_child_weight": 4,
+        "gamma": 4.75357153204958,
+        "reg_alpha": 0.03872090295370417,
+        "reg_lambda": 0.0024430162614261434
+      },
+      "cv_f1": 0.9949,
+      "raw_f1": 0.9967,
+      "matched_f1": 0.9808
+    },
+    "tuning_delta_matched": 0.0,
+    "n_xgb_trials": 11,
+    "family_comparison": [
+      {
+        "model": "eng_xgboost (tuned)",
+        "cv_f1": 0.9949,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      },
+      {
+        "model": "eng_lightgbm",
+        "cv_f1": 0.9949,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      },
+      {
+        "model": "eng_catboost",
+        "cv_f1": 0.9951,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      },
+      {
+        "model": "eng_logreg (C=0.03)",
+        "cv_f1": 0.991,
+        "raw_f1": 0.9927,
+        "matched_f1": 0.979
+      }
+    ],
+    "calibration": [
+      {
+        "calibration": "uncalibrated",
+        "ECE": 0.0041,
+        "Brier": 0.0034,
+        "macro_f1@0.5": 0.9967
+      },
+      {
+        "calibration": "platt",
+        "ECE": 0.0101,
+        "Brier": 0.0033,
+        "macro_f1@0.5": 0.9967
+      },
+      {
+        "calibration": "isotonic",
+        "ECE": 0.0041,
+        "Brier": 0.0032,
+        "macro_f1@0.5": 0.9967
+      }
+    ],
+    "best_calibration": "uncalibrated",
+    "operating_points": [
+      {
+        "operating_point": "max_macro_f1",
+        "threshold": 0.1634,
+        "precision": 0.9995,
+        "recall": 0.994,
+        "macro_f1": 0.9967,
+        "entity_reuse_recall": 0.9915,
+        "cost": 61
+      },
+      {
+        "operating_point": "high_recall(>=0.99)",
+        "threshold": 0.1634,
+        "precision": 0.9995,
+        "recall": 0.994,
+        "macro_f1": 0.9967,
+        "entity_reuse_recall": 0.9915,
+        "cost": 61
+      },
+      {
+        "operating_point": "high_precision(>=0.99)",
+        "threshold": 0.1634,
+        "precision": 0.9995,
+        "recall": 0.994,
+        "macro_f1": 0.9967,
+        "entity_reuse_recall": 0.9915,
+        "cost": 61
+      },
+      {
+        "operating_point": "cost_optimal(FN:FP=5:1)",
+        "threshold": 0.1634,
+        "precision": 0.9995,
+        "recall": 0.994,
+        "macro_f1": 0.9967,
+        "entity_reuse_recall": 0.9915,
+        "cost": 61
+      }
+    ],
+    "auprc": 0.9976,
+    "auroc": 0.9975,
+    "error_buckets": [
+      {
+        "dimension": "overlap",
+        "bucket": "ov-Q1(low)",
+        "n": 1000,
+        "error_rate": 0.004
+      },
+      {
+        "dimension": "overlap",
+        "bucket": "ov-Q2",
+        "n": 1000,
+        "error_rate": 0.0
+      },
+      {
+        "dimension": "overlap",
+        "bucket": "ov-Q3",
+        "n": 1000,
+        "error_rate": 0.005
+      },
+      {
+        "dimension": "overlap",
+        "bucket": "ov-Q4(high)",
+        "n": 1000,
+        "error_rate": 0.004
+      },
+      {
+        "dimension": "ans_length",
+        "bucket": "len-Q1(short)",
+        "n": 1000,
+        "error_rate": 0.004
+      },
+      {
+        "dimension": "ans_length",
+        "bucket": "len-Q2",
+        "n": 1000,
+        "error_rate": 0.006
+      },
+      {
+        "dimension": "ans_length",
+        "bucket": "len-Q3",
+        "n": 1000,
+        "error_rate": 0.003
+      },
+      {
+        "dimension": "ans_length",
+        "bucket": "len-Q4(long)",
+        "n": 1000,
+        "error_rate": 0.0
+      },
+      {
+        "dimension": "form",
+        "bucket": "grounded_non_verbatim",
+        "n": 95,
+        "error_rate": 0.0105
+      },
+      {
+        "dimension": "form",
+        "bucket": "grounded_verbatim",
+        "n": 1905,
+        "error_rate": 0.0
+      },
+      {
+        "dimension": "numeric",
+        "bucket": "answer_has_number",
+        "n": 813,
+        "error_rate": 0.0
+      },
+      {
+        "dimension": "numeric",
+        "bucket": "answer_no_number",
+        "n": 3187,
+        "error_rate": 0.0041
+      }
+    ],
+    "learning_curve": [
+      {
+        "frac": 0.05,
+        "n_items": 400,
+        "n_rows": 800,
+        "raw_f1": 0.9927,
+        "matched_f1": 0.979
+      },
+      {
+        "frac": 0.1,
+        "n_items": 800,
+        "n_rows": 1600,
+        "raw_f1": 0.9925,
+        "matched_f1": 0.9773
+      },
+      {
+        "frac": 0.2,
+        "n_items": 1600,
+        "n_rows": 3200,
+        "raw_f1": 0.9947,
+        "matched_f1": 0.9667
+      },
+      {
+        "frac": 0.35,
+        "n_items": 2800,
+        "n_rows": 5600,
+        "raw_f1": 0.996,
+        "matched_f1": 0.9755
+      },
+      {
+        "frac": 0.5,
+        "n_items": 4000,
+        "n_rows": 8000,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      },
+      {
+        "frac": 0.75,
+        "n_items": 6000,
+        "n_rows": 12000,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      },
+      {
+        "frac": 1.0,
+        "n_items": 8000,
+        "n_rows": 16000,
+        "raw_f1": 0.9967,
+        "matched_f1": 0.9808
+      }
+    ],
+    "saturation_frac": 0.05
   }
 }

@@ -1,0 +1,4 @@
+calibration,ECE,Brier,macro_f1@0.5
+uncalibrated,0.0041,0.0034,0.9967
+platt,0.0101,0.0033,0.9967
+isotonic,0.0041,0.0032,0.9967

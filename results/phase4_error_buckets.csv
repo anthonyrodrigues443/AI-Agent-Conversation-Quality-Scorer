@@ -1,0 +1,13 @@
+dimension,bucket,n,error_rate
+overlap,ov-Q1(low),1000,0.004
+overlap,ov-Q2,1000,0.0
+overlap,ov-Q3,1000,0.005
+overlap,ov-Q4(high),1000,0.004
+ans_length,len-Q1(short),1000,0.004
+ans_length,len-Q2,1000,0.006
+ans_length,len-Q3,1000,0.003
+ans_length,len-Q4(long),1000,0.0
+form,grounded_non_verbatim,95,0.0105
+form,grounded_verbatim,1905,0.0
+numeric,answer_has_number,813,0.0
+numeric,answer_no_number,3187,0.0041

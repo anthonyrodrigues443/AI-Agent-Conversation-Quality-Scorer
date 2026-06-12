@@ -1,0 +1,5 @@
+operating_point,threshold,precision,recall,macro_f1,entity_reuse_recall,cost
+max_macro_f1,0.1634,0.9995,0.994,0.9967,0.9915,61
+high_recall(>=0.99),0.1634,0.9995,0.994,0.9967,0.9915,61
+high_precision(>=0.99),0.1634,0.9995,0.994,0.9967,0.9915,61
+cost_optimal(FN:FP=5:1),0.1634,0.9995,0.994,0.9967,0.9915,61

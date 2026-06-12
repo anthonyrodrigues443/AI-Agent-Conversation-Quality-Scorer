@@ -1,0 +1,5 @@
+rank,model,cv_f1,raw_f1,matched_f1
+1,eng_xgboost (tuned),0.9949,0.9967,0.9808
+2,eng_lightgbm,0.9949,0.9967,0.9808
+3,eng_catboost,0.9951,0.9967,0.9808
+4,eng_logreg (C=0.03),0.991,0.9927,0.979
