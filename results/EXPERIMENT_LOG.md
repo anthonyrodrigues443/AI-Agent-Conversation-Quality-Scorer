@@ -254,7 +254,7 @@ Fine-tuned `cross-encoder/ms-marco-MiniLM-L-6-v2` (22M) with identical Phase-3 h
 4. **…but only frontier reasoning catches grounded-but-irrelevant hallucinations** — Codex 10/10, Haiku 9/10, Opus 5/10 vs champion 0/10, fine-tuned QA-CE 2/10.
 5. **Opus is the conservative outlier** — highest precision, lowest recall; never false-alarms but catches half.
 
-**Production recommendation:** trigger router — tree on 100% of traffic (~free, sub-ms), route only `is_substr==1` "looks-grounded" suspects to a frontier LLM for the relevance check. Tree owns grounding, LLM owns relevance.
+**Production recommendation (corrected after Codex review #7):** trigger router — tree on 100% of traffic (~free, sub-ms), route the `is_substr==1` "looks-grounded" suspects to a frontier LLM. **But on HaluEval that trigger is ~48% of traffic (1,915/4,000)** — verbatim-correct answers are ~half the data — and at the LLM's probe FPR (~0.10) routing them risks ~190 new false positives to rescue 10 hallucinations. So the naive router is *not* cheap; grounded-but-irrelevant detection is genuinely expensive. Tightening the trigger + a high-precision LLM threshold (blended cost/recall on full test) is Phase-6 work.
 
 ---
 *(Phase 6+ appended on subsequent sessions.)*

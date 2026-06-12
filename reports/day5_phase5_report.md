@@ -37,7 +37,7 @@ How it shaped the work: rather than chase the saturated average, I built the que
 | qa_relevance_hybrid (13f + ce_qa) | **0.9860** | 0.9972 | 2/10 | — |
 | eng_xgboost (Phase-4 champion) | 0.9808 | 0.9967 | 0/10 | — |
 
-**Interpretation:** Against the hypothesis — **adding the question made the standalone classifier worse** (0.9457 → 0.9211, −0.025): the question's tokens dilute the answer↔knowledge signal the CE leans on, and it still caught only 2/10 of the residual. Yet the QA-CE *probability* is a useful soft feature — it is the hybrid's #2 most important input (importance 0.303) and lifts the ceiling to **0.9860 (+0.0052)**. Soft signal > hard argmax. The residual barely moved (0 → 2 of 10): question-relevance is a genuinely hard, distinct failure mode even for a model fine-tuned on the exact task.
+**Interpretation:** Against the hypothesis — **adding the question made the standalone classifier worse** (0.9457 → 0.9211, −0.025): the question's tokens dilute the answer↔knowledge signal the CE leans on, and it still caught only 2/10 of the residual. Yet the QA-CE *probability* is a useful soft feature — it is the hybrid's #2 most important input (importance 0.303) and lifts the ceiling to **0.9860 (+0.0052)** (*optimistically biased — the hybrid is stacked on in-sample train CE predictions; clean OOF stacking is Phase-6 work — see post-review corrections*). Soft signal > hard argmax. The residual barely moved (0 → 2 of 10): question-relevance is a genuinely hard, distinct failure mode even for a model fine-tuned on the exact task.
 
 ### Experiment 5.2: Leave-one-feature-out ablation
 **Hypothesis:** correlated features mask each other; honest removal will reveal which features truly carry signal and whether any hurt.
@@ -108,8 +108,19 @@ How it shaped the work: rather than chase the saturated average, I built the que
 - These are detectable cheaply (`is_substr==1` + champion says grounded) → ideal LLM-router trigger.
 - LLM failure modes differ: Opus under-flags (misses 5/10 hallucinations, 0 false alarms); Haiku slightly over-flags (FPR 0.20). Codex is the only one with both high recall and acceptable specificity on the probe.
 
-## Production Recommendation
-**A trigger router, not a single model.** Run the CPU tree on 100% of traffic (~free, sub-ms, 0.997 raw-F1). Route only the `is_substr==1` "looks-grounded" suspects — a small, cheaply-detected minority — to a frontier LLM (Codex GPT-5.5 or Haiku 4.5) for a relevance check. The tree owns grounding at scale; the LLM owns relevance where it's worth the latency. Neither alone covers both failure surfaces; together they do.
+## Production Recommendation (corrected after second-model review)
+**A trigger router, not a single model — but the trigger is *not* a cheap minority on HaluEval.** Run the CPU tree on 100% of traffic (~free, sub-ms, 0.997 raw-F1) and route the `is_substr==1` + "tree-says-grounded" suspects to a frontier LLM for a relevance check. The Codex review (#7) correctly flagged my original "small minority" framing: **`is_substr==1` is ~48% of the test set (1,915 / 4,000)** because verbatim-correct answers are extremely common in HaluEval. So the naive trigger routes ~half of traffic, and at the LLM's measured probe FPR (~0.10, n=10) it would inject *dozens-to-hundreds* of new false positives among the 1,905 verbatim-grounded answers to rescue 10 hallucinations.
+
+This sharpens rather than weakens the finding: **grounded-but-irrelevant detection is genuinely expensive**, because the only cheap signal that flags the suspects (verbatim overlap) also flags every correct verbatim answer. The open problem is a *tighter* trigger (e.g. multi-candidate questions only) and a high-precision LLM operating point — the truly blended recall/precision/cost on full test is **Phase-6 work** (the notebook's final cell computes the trigger economics that motivate it).
+
+## Post-review corrections (Codex second-model pass)
+| # | Codex finding | Verdict | Action |
+|---|---------------|---------|--------|
+| 1 | Hybrid uses in-sample train CE preds (stacking leakage) | Valid | Caveat added; +0.0052 hybrid gain flagged optimistic; OOF stacking → Phase 6. Headline findings unaffected. |
+| 7 | `is_substr==1` router ≈48% of traffic, not a minority | Valid | Corrected here + in notebook with a computed economics cell. |
+| 2,3 | Codex/Claude CLI models not version-pinned | Valid (repro) | This run's labels are correct (codex default resolved to gpt-5.5); pin exact IDs in Phase 6. |
+| 4,5 | Parser substring-match / cache not content-addressed | Valid (repro) | No impact this run (100% parse-success, 0 failed parses); harden in Phase 6. |
+| 6 | Codex cost comment vs $0.05/call inconsistent | Valid | Report already discloses both CLI-agent and direct-API figures; will compute from recorded tokens in Phase 6. |
 
 ## Next Steps
 - **Phase 6 (Sat):** production pipeline + Streamlit UI exposing the router (tree score + LLM relevance check on verbatim suspects), with the dual head-to-head visualized.
