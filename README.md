@@ -12,7 +12,17 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 ---
 
-## Headline (Phase 3 — latest)
+## Headline (Phase 5 — latest)
+
+> **My 13-feature CPU model beats Claude Opus 4.8, Claude Haiku 4.5, and Codex GPT-5.5 at catching AI hallucinations — except on the one slice that needs reasoning, where only the frontier wins.**
+> On a held-out stratified sample the tiny tree scores a **perfect 1.000** macro-F1 vs **Opus 0.816 / Codex 0.899 / Haiku 0.900** (all zero-shot), at **0.03 ms** and **$0.0001/1k** — 3,500× to 500,000× cheaper. Then I ablated it: drop `lcs_char_ratio` and macro-F1 craters −0.074; drop *any of the other twelve* features and it moves **0.0000**. It was a **1-feature model in disguise** all along.
+> The mirror twist: on the 10 "grounded-but-irrelevant" hallucinations (verbatim-correct text, *wrong answer to the question*) the tree catches **0/10** and a cross-encoder fine-tuned on the exact task only **2/10** — but **Codex GPT-5.5 catches 10/10**, Haiku 9/10, Opus 5/10. The model that loses the average wins the slice that needs to *read the question*. And putting the question inside my own encoder? It made the classifier **worse** (−0.025) — though its probability is still the #2 feature in the hybrid that finally nudges the ceiling to **0.9860**.
+> **Production answer: a router.** Tree on 100% of traffic (~free); send only the `is_substr==1` "looks-grounded" suspects to an LLM for a relevance check. Tree owns grounding, LLM owns relevance — neither alone covers both.
+
+![Phase 5 — custom vs frontier LLMs](results/llm_comparison.png)
+![Phase 5 — grounded-but-irrelevant probe](results/phase5_probe.png)
+
+## Headline (Phase 3)
 
 > **Phase 2 said a one-line lexical rule beats everything. Phase 3 says: that rule was mostly a *form* detector.**
 > Engineered claim-relation features hit **0.9808** length-matched macro-F1 (the Phase-2 bar was 0.9244) — and

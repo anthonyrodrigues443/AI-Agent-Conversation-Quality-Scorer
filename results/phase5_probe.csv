@@ -1,0 +1,7 @@
+model,residual_recall,recall_val,ctrl_FPR,probe_bal_acc
+Codex GPT-5.5,10/10,1.0,0.1,0.95
+Claude Haiku 4.5,9/10,0.9,0.2,0.85
+Claude Opus 4.8,5/10,0.5,0.0,0.75
+ce_qa_aware (argmax),2/10,0.2,0.0,0.6
+qa_relevance_hybrid,2/10,0.2,0.0,0.6
+eng_xgboost (champion),0/10,0.0,0.0,0.5
