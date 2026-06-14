@@ -71,6 +71,8 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 4. **Adding the question hurts** (0.919 → 0.804): shared tokens are non-discriminative noise.
 5. **(Phase 2) Richer paradigms can't beat the 1-line rule.** Six paradigms — three embedding encoders and a 184M-param zero-shot NLI cross-encoder — all collapse to overlap under length matching (champion holds at 0.9244). NLI even *inverts*, scoring hallucinations as more-entailed than grounded answers. The bottleneck is features, not models.
 6. **(Phase 3) The right features beat the bar — and a fine-tuned cross-encoder finally reads grounding.** Engineered claim-relation features reach **0.9808** matched (vs 0.9244), and an *engineered-only* model that drops the Phase-2 overlap feature ties it exactly — the features subsume the old champion. Fine-tuning lifts the cross-encoder from the zero-shot floor (0.687) to **0.963**. The self-correction: on a **form-ambiguous** control (grounded answer isn't a verbatim span), the overlap champion **collapses to 0.33** while the fine-tuned CE holds at 0.99 — overlap was substantially a *form* detector, the trained model reads grounding.
+7. **(Phase 4) Every lever is exhausted — the ceiling is structural.** Optuna moves matched-F1 by **+0.0000**; XGBoost = LightGBM = CatBoost land at *exactly* 0.9967/0.9808; the uncalibrated tree is already calibrated (ECE 0.0041, Platt makes it 2.5× worse); the learning curve is flat after 800 rows. 10/12 residual misses are verbatim-but-wrong answers — the ceiling is **question-relevance, not grounding**.
+8. **(Phase 5) A 1-feature model that beats frontier LLMs on average but loses the slice that needs reasoning.** Leave-one-out: only `lcs_char_ratio` matters (−0.074; the other 12 are Δ=0.0000). Zero-shot, the 0.03 ms CPU tree scores **1.000** macro-F1 vs Opus 0.816 / Codex 0.899 / Haiku 0.900 — yet is **0/10** on grounded-but-irrelevant hallucinations where **Codex GPT-5.5 is 10/10**. The production answer is a router (tree everywhere + LLM on verbatim suspects); since the `is_substr` trigger is ~48% of traffic, relevance detection is genuinely expensive.
 
 ## Iteration Summary
 
@@ -152,6 +154,58 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
+### Phase 4: Hyperparameter Tuning, Calibration & Error Analysis — 2026-06-11
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** Whether *any* lever moves a feature-bound champion — Optuna over 9 XGBoost knobs, a gradient-boosting family head-to-head (LightGBM/CatBoost), calibration (Platt/isotonic), an operating-point sweep, and a learning curve — all on the frozen split + the length-matched control (n=572). Headline metric: 11 Optuna trials moved matched macro-F1 by **+0.0000** (CV −0.0002).<br><br>
+**What worked best:** Nothing beat the Phase-3 default — `eng_xgboost` = LightGBM = CatBoost land on the *exact* same **0.9967 raw / 0.9808 matched**, and a tuned linear head is within 0.0018. The learner is interchangeable once the features exist.
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/phase4_optuna_history.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** The ceiling is **structural, not tunable** — every lever (hyperparameters, model family, calibration, threshold, 20× data) is exhausted. The top-10 Optuna trials are a flat ridge across depth 3→10 and 200→800 trees; the model is feature-bound, proven by exhaustion.<br><br>
+**Surprise:** Counter to the textbook, the uncalibrated tree is *already* calibrated (ECE 0.0041) — isotonic does nothing and Platt makes it **2.5× worse**. And 10 of 12 residual misses are verbatim substrings of the passage scored P≈0.01: **grounded-but-irrelevant** (right text, wrong answer to the question) — a mode no grounding feature can catch.<br><br>
+**Research:** Niculescu-Mizil & Caruana, 2005 — boosted trees are classically mis-calibrated, so we tested Platt/isotonic; it backfired here. "The Mirage of Hallucination Detection", EMNLP-Findings 2025 — trained detectors are shift-sensitive, so we kept a form-ambiguous honesty slice.<br><br>
+**Best Model So Far:** `eng_xgboost` — **0.9808 matched macro-F1** (unchanged; the residual ceiling is question-relevance, the Phase-5 target).
+
+</td>
+</tr>
+</table>
+
+### Phase 5: Advanced Techniques + Ablation + Frontier-LLM Head-to-Head — 2026-06-12
+
+<table>
+<tr>
+<td valign="top" width="38%">
+
+**What was tested:** A question-aware cross-encoder + QA-relevance hybrid, a leave-one-feature-out ablation of all 13 features, and a zero-shot head-to-head vs **Claude Opus 4.8 / Haiku 4.5 / Codex GPT-5.5** (representative n=50 + a 10-case grounded-but-irrelevant probe). Headline metric: the CPU tree scored a **perfect 1.000** macro-F1 on n=50 vs Opus 0.816 / Codex 0.899 / Haiku 0.900.<br><br>
+**What worked best:** The `eng_xgboost` champion still wins the average at **0.03 ms** and **$0.0001/1k** (3,500×–500,000× cheaper than any frontier model); the QA-CE probability as a *soft* feature nudges a hybrid to **0.9860 matched**.
+
+</td>
+<td align="center" width="24%">
+
+<img src="results/llm_comparison.png" width="220">
+
+</td>
+<td valign="top" width="38%">
+
+**Key Insight:** Lexical grounding is a commodity a 1-feature tree nails for ~free; **relevance is reasoning you still pay a frontier model for.** The tree wins the representative distribution but is **0/10** on grounded-but-irrelevant hallucinations where **Codex GPT-5.5 is 10/10** (Haiku 9, Opus 5).<br><br>
+**Surprise:** Leave-one-out proved the 13-feature champion is a **1-feature model in disguise** — dropping `lcs_char_ratio` costs −0.074, dropping *any* of the other twelve costs exactly **0.0000**. And putting the question inside the encoder (the "obvious" fix) made the standalone classifier *worse* (−0.025).<br><br>
+**Research:** Belyi et al., 2024 (Luna) — a small fine-tuned CE conditioned on query+context beats LLM judges at ~100–1000× lower cost, motivating the QA-aware CE + cost framing. QAFactEval / QuestEval lineage — relevance is undecidable without the question, so we put the question in the encoder.<br><br>
+**Best Model So Far:** `qa_relevance_hybrid` — **0.9860 matched macro-F1** (nominal best, optimistically biased pending clean OOF stacking in Phase 6); `eng_xgboost` 0.9808 is the production champion.
+
+</td>
+</tr>
+</table>
+
 ## Architecture
 
 ```mermaid
@@ -193,8 +247,8 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 | 1 | Domain research + dataset + EDA + baselines + length-matched control | ✅ |
 | 2 | 4–6 paradigms (n-grams, SBERT, zero-shot NLI) × raw vs matched | ✅ |
 | 3 | Feature engineering + fine-tuned cross-encoder + form-ambiguous control | ✅ |
-| 4 | Hyperparameter tuning + error analysis | ⏳ |
-| 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ⏳ |
+| 4 | Hyperparameter tuning + error analysis | ✅ |
+| 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ✅ |
 | 6 | Production pipeline + Streamlit UI | ⏳ |
 | 7 | Tests + README polish + consolidation | ⏳ |
 
