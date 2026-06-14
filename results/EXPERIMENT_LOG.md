@@ -257,4 +257,43 @@ Fine-tuned `cross-encoder/ms-marco-MiniLM-L-6-v2` (22M) with identical Phase-3 h
 **Production recommendation (corrected after Codex review #7):** trigger router — tree on 100% of traffic (~free, sub-ms), route the `is_substr==1` "looks-grounded" suspects to a frontier LLM. **But on HaluEval that trigger is ~48% of traffic (1,915/4,000)** — verbatim-correct answers are ~half the data — and at the LLM's probe FPR (~0.10) routing them risks ~190 new false positives to rescue 10 hallucinations. So the naive router is *not* cheap; grounded-but-irrelevant detection is genuinely expensive. Tightening the trigger + a high-precision LLM threshold (blended cost/recall on full test) is Phase-6 work.
 
 ---
-*(Phase 6+ appended on subsequent sessions.)*
+
+## Phase 6 — Production pipeline + Streamlit UI + the blended router economics (2026-06-14)
+
+Productionised the champion as an importable pipeline (`src/{data_pipeline,feature_engineering,train,predict,evaluate,router,llm_judge,router_eval}.py`, `models/champion.joblib` 0.32 MB reproducing matched-F1 **0.9808** exactly) and answered the question Phase 5 deferred: **does escalating verbatim suspects to a frontier LLM actually pay, once you account for its false-positive rate on the verbatim-correct majority?** Measured on the full 4,000-row test split.
+
+### 6.1 Router trigger sizing (full test, n=4,000)
+| quantity | value |
+|---|---:|
+| verbatim answers (`is_substr==1`) | 1,915 (47.9%) |
+| naive trigger (verbatim **and** tree says grounded) | 1,915 (47.9% of traffic) |
+| — of which truly hallucinated (the residual the tree misses) | **10** |
+| — of which verbatim-**correct** grounded answers | 1,905 (99.5%) |
+| Phase-5's "multi-candidate only" trigger | 165 rows, **0/10** residual caught |
+
+**Discovery — the Phase-5 heuristic is exactly wrong.** The 10 residual hallucinations are *single-candidate, multi-hop* questions (the verbatim answer is the wrong **hop**, e.g. quoting the "Leading Minister" when asked who succeeded Hitler), not comparative "X or Y" questions. The 165 multi-candidate verbatim suspects contain **zero** hallucinations — pure false-positive risk.
+
+### 6.2 Blended router policies (expected-value over measured LLM rates)
+Measured rates: **Haiku** residual-recall 0.90 / FPR 0.15 (n=40 controls); **Codex GPT-5.5** residual-recall 1.00 / FPR 0.25 (n=12).
+
+**Judge = Claude Haiku 4.5 (τ=0.5):**
+| Policy | macro-F1 | prec | recall | new FP | residual caught | routed | cost/1k |
+|---|--:|--:|--:|--:|:--:|--:|--:|
+| **tree only** | **0.9967** | 0.9995 | 0.994 | 0 | 0/10 | 0% | $0.0001 |
+| multihop (both/also/share) | 0.9908 | 0.985 | 0.997 | 29 | 5/10 | 4.9% | $0.110 |
+| multi-candidate (Phase-5 idea) | 0.9906 | 0.987 | 0.994 | 25 | 0/10 | 4.1% | $0.108 |
+| complexity (q_words≥20) | 0.9759 | 0.957 | 0.997 | 89 | 5/10 | 14.9% | $0.130 |
+| naive (all verbatim suspects) | 0.9272 | 0.874 | 0.999 | 287 | 9/10 | 47.9% | $0.196 |
+
+**Judge = Codex GPT-5.5 (τ=0.5), the best reasoner:**
+| Policy | macro-F1 | new FP | residual caught | cost/1k |
+|---|--:|--:|:--:|--:|
+| **tree only** | **0.9967** | 0 | 0/10 | $0.0001 |
+| naive (all verbatim suspects) | 0.8785 | 477 | **10/10** | $24.0 |
+
+### Findings
+1. **tree-only is Pareto-optimal — every LLM router LOWERS macro-F1.** The residual is 10/4,000 = 0.25% of test; the verbatim-suspect pool it hides in is 47.9% of traffic and 99.5% correct, so any LLM FPR > ~0.5% creates more new false positives than the hallucinations it rescues.
+2. **Even Codex GPT-5.5, catching 10/10 of the residual, drops macro-F1 to 0.8785** by manufacturing ~476 false positives at ~$24/1k. Perfect recall on the slice is not enough.
+3. **This CORRECTS the Phase-5 recommendation.** Phase 5 said "ship both — tree at scale, LLM on the suspects." Phase 6 shows that on HaluEval-QA you should **ship tree-only**: the suspect pool is too majority-correct for escalation to pay. The right escalation target would be a tiny, high-precision sub-slice that no cheap lexical rule isolates — which is the whole reason the residual is a *reasoning* problem.
+
+**Deliverables:** `src/` production pipeline (8 modules), `models/{champion.joblib,model_card.md}`, `app.py` (Streamlit two-head demo with live scoring + on-demand LLM relevance check), `tests/` (19 pytest, all green), `results/{phase6_router_policies.csv,phase6_router_sizing.json,phase6_router_tradeoff.png,ui_screenshot.png}`, append-only LLM cache `results/phase6_cache/`.

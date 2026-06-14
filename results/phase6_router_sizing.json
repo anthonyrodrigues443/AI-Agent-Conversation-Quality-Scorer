@@ -1,0 +1,21 @@
+{
+  "n_test": 4000,
+  "n_verbatim": 1915,
+  "naive_trigger": 1915,
+  "naive_trigger_frac": 0.4788,
+  "residual_hallu": 10,
+  "residual_idx": [
+    1675,
+    4717,
+    7019,
+    8935,
+    9029,
+    10881,
+    13723,
+    16187,
+    17639,
+    19951
+  ],
+  "multi_candidate_trigger": 165,
+  "multi_candidate_residual_caught": 0
+}

@@ -1,0 +1,11 @@
+policy,macro_f1,precision_hallu,recall_hallu,FP,FN,routed,routed_frac,residual_caught,new_false_positives,cost_per_1k,backend,tau,residual_recall_measured,ctrl_FPR_measured,n_ctrl
+tree_only,0.9967,0.9995,0.994,1.0,12,0,0.0,0/10,0.0,0.1,claude/haiku,0.5,0.9,0.15,40
+naive_router (all verbatim suspects),0.9272,0.8744,0.9985,286.8,3,1915,0.4788,9/10,285.8,0.1957,claude/haiku,0.5,0.9,0.15,40
+multi_candidate_router (Phase-5 suggestion),0.9906,0.9872,0.994,25.8,12,165,0.0413,0/10,24.8,0.1082,claude/haiku,0.5,0.9,0.15,40
+complexity_router (q_words>=20),0.9759,0.957,0.9965,89.5,7,595,0.1487,5/10,88.5,0.1298,claude/haiku,0.5,0.9,0.15,40
+multihop_router (both/also/share),0.9908,0.9853,0.9965,29.6,7,196,0.049,5/10,28.6,0.1098,claude/haiku,0.5,0.9,0.15,40
+tree_only,0.9967,0.9995,0.994,1.0,12,0,0.0,0/10,0.0,0.1,codex/gpt-5.5,0.5,1.0,0.25,12
+naive_router (all verbatim suspects),0.8785,0.8072,0.999,477.2,2,1915,0.4788,10/10,476.2,23.9896,codex/gpt-5.5,0.5,1.0,0.25,12
+multi_candidate_router (Phase-5 suggestion),0.9864,0.9792,0.994,42.2,12,165,0.0413,0/10,41.2,2.1584,codex/gpt-5.5,0.5,1.0,0.25,12
+complexity_router (q_words>=20),0.9611,0.9307,0.9965,148.5,7,595,0.1487,5/10,147.5,7.5226,codex/gpt-5.5,0.5,1.0,0.25,12
+multihop_router (both/also/share),0.9861,0.9761,0.9965,48.8,7,196,0.049,5/10,47.8,2.5451,codex/gpt-5.5,0.5,1.0,0.25,12

@@ -1345,5 +1345,184 @@
       "QAFactEval/QuestEval (QA-based faithfulness)",
       "Illusion of Progress (arXiv:2508.08285)"
     ]
+  },
+  "phase6": {
+    "title": "Production pipeline + Streamlit UI + the blended router economics",
+    "dataset": "HaluEval-QA",
+    "primary_metric": "macro_f1",
+    "champion": {
+      "model": "XGBoost (13 claim-relation features)",
+      "bundle": "models/champion.joblib",
+      "bundle_mb": 0.32,
+      "raw_test_macro_f1": 0.9967,
+      "length_matched_macro_f1": 0.9808,
+      "recall_hallu": 0.994,
+      "confusion_raw": [
+        [
+          1999,
+          1
+        ],
+        [
+          12,
+          1988
+        ]
+      ],
+      "us_per_row_features": null
+    },
+    "router_sizing": {
+      "n_test": 4000,
+      "n_verbatim": 1915,
+      "naive_trigger": 1915,
+      "naive_trigger_frac": 0.4788,
+      "residual_hallu": 10,
+      "residual_idx": [
+        1675,
+        4717,
+        7019,
+        8935,
+        9029,
+        10881,
+        13723,
+        16187,
+        17639,
+        19951
+      ],
+      "multi_candidate_trigger": 165,
+      "multi_candidate_residual_caught": 0
+    },
+    "measured_llm_rates": {
+      "claude/haiku": {
+        "residual_recall": 0.9,
+        "ctrl_FPR": 0.15,
+        "n_ctrl": 40
+      },
+      "codex/gpt-5.5": {
+        "residual_recall": 1.0,
+        "ctrl_FPR": 0.25,
+        "n_ctrl": 12
+      }
+    },
+    "router_policies": {
+      "claude/haiku": [
+        {
+          "policy": "tree_only",
+          "macro_f1": 0.9967,
+          "precision_hallu": 0.9995,
+          "recall_hallu": 0.994,
+          "FP": 1.0,
+          "residual_caught": "0/10",
+          "new_false_positives": 0.0,
+          "routed_frac": 0.0,
+          "cost_per_1k": 0.1
+        },
+        {
+          "policy": "naive_router (all verbatim suspects)",
+          "macro_f1": 0.9272,
+          "precision_hallu": 0.8744,
+          "recall_hallu": 0.9985,
+          "FP": 286.8,
+          "residual_caught": "9/10",
+          "new_false_positives": 285.8,
+          "routed_frac": 0.4788,
+          "cost_per_1k": 0.1957
+        },
+        {
+          "policy": "multi_candidate_router (Phase-5 suggestion)",
+          "macro_f1": 0.9906,
+          "precision_hallu": 0.9872,
+          "recall_hallu": 0.994,
+          "FP": 25.8,
+          "residual_caught": "0/10",
+          "new_false_positives": 24.8,
+          "routed_frac": 0.0413,
+          "cost_per_1k": 0.1082
+        },
+        {
+          "policy": "complexity_router (q_words>=20)",
+          "macro_f1": 0.9759,
+          "precision_hallu": 0.957,
+          "recall_hallu": 0.9965,
+          "FP": 89.5,
+          "residual_caught": "5/10",
+          "new_false_positives": 88.5,
+          "routed_frac": 0.1487,
+          "cost_per_1k": 0.1298
+        },
+        {
+          "policy": "multihop_router (both/also/share)",
+          "macro_f1": 0.9908,
+          "precision_hallu": 0.9853,
+          "recall_hallu": 0.9965,
+          "FP": 29.6,
+          "residual_caught": "5/10",
+          "new_false_positives": 28.6,
+          "routed_frac": 0.049,
+          "cost_per_1k": 0.1098
+        }
+      ],
+      "codex/gpt-5.5": [
+        {
+          "policy": "tree_only",
+          "macro_f1": 0.9967,
+          "precision_hallu": 0.9995,
+          "recall_hallu": 0.994,
+          "FP": 1.0,
+          "residual_caught": "0/10",
+          "new_false_positives": 0.0,
+          "routed_frac": 0.0,
+          "cost_per_1k": 0.1
+        },
+        {
+          "policy": "naive_router (all verbatim suspects)",
+          "macro_f1": 0.8785,
+          "precision_hallu": 0.8072,
+          "recall_hallu": 0.999,
+          "FP": 477.2,
+          "residual_caught": "10/10",
+          "new_false_positives": 476.2,
+          "routed_frac": 0.4788,
+          "cost_per_1k": 23.9896
+        },
+        {
+          "policy": "multi_candidate_router (Phase-5 suggestion)",
+          "macro_f1": 0.9864,
+          "precision_hallu": 0.9792,
+          "recall_hallu": 0.994,
+          "FP": 42.2,
+          "residual_caught": "0/10",
+          "new_false_positives": 41.2,
+          "routed_frac": 0.0413,
+          "cost_per_1k": 2.1584
+        },
+        {
+          "policy": "complexity_router (q_words>=20)",
+          "macro_f1": 0.9611,
+          "precision_hallu": 0.9307,
+          "recall_hallu": 0.9965,
+          "FP": 148.5,
+          "residual_caught": "5/10",
+          "new_false_positives": 147.5,
+          "routed_frac": 0.1487,
+          "cost_per_1k": 7.5226
+        },
+        {
+          "policy": "multihop_router (both/also/share)",
+          "macro_f1": 0.9861,
+          "precision_hallu": 0.9761,
+          "recall_hallu": 0.9965,
+          "FP": 48.8,
+          "residual_caught": "5/10",
+          "new_false_positives": 47.8,
+          "routed_frac": 0.049,
+          "cost_per_1k": 2.5451
+        }
+      ]
+    },
+    "key_findings": [
+      "tree_only is Pareto-optimal: every LLM router LOWERS macro-F1 on the full 4000-row test split.",
+      "The verbatim-suspect pool is 47.9% of traffic and 99.5% verbatim-CORRECT answers, so any LLM FPR>~0.5% manufactures more false positives than the 10 residual hallucinations it can rescue.",
+      "Phase-5's suggested 'multi-candidate only' trigger catches 0/10 residual hallucinations (they are single-candidate multi-hop questions) and still creates ~25 false positives.",
+      "Even Codex GPT-5.5 (10/10 residual recall) drops macro-F1 to 0.8785 by creating ~476 false positives at ~$24/1k. This CORRECTS the Phase-5 'ship both' recommendation: on HaluEval-QA, ship tree-only."
+    ]
   }
 }

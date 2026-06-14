@@ -12,7 +12,16 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 ---
 
-## Headline (Phase 5 — latest)
+## Headline (Phase 6 — latest)
+
+> **I built the LLM router everyone recommends to cover my model's blind spot. It made the system *worse* — at every setting, with every model I tried. The corrected answer: ship the tree alone.**
+> Phase 5 ended on "ship both": my 0.3 MB tree for the 99.75% it nails, a frontier LLM for the 10 verbatim-but-irrelevant hallucinations it's blind to. Phase 6 actually built that router and measured it on all **4,000** test rows. **Every routing policy LOWERED macro-F1.** The naive router (escalate every verbatim suspect) rescues 9/10 hallucinations — and manufactures **286 new false positives** doing it (precision 0.9995 → 0.874, macro-F1 0.9967 → 0.927). Even **Codex GPT-5.5, which catches 10/10**, drops macro-F1 to **0.8785** by creating ~476 false positives at ~$24/1k.
+> **Why:** the 10 hallucinations hide in a pool of 1,915 verbatim answers that is **99.5% correct**, so any LLM false-alarm rate above ~0.5% costs more than it saves. And the trigger I expected to fix it — Phase 5's "multi-candidate questions only" — catches **0/10**: the residual is *single-candidate multi-hop* questions (the verbatim answer is the wrong **hop**), not comparative ones. A deferral cascade only pays when the hard slice is error-enriched; here it's a needle in a haystack of correct answers, and **no cheap lexical rule finds the needle — because relevance is reasoning.** That's not a bug in the router; it's the thesis, quantified.
+
+![Phase 6 — every router lowers macro-F1; the cure is worse than the disease](results/phase6_router_tradeoff.png)
+![Streamlit two-head demo](results/ui_screenshot.png)
+
+## Headline (Phase 5)
 
 > **My 13-feature CPU model beats Claude Opus 4.8, Claude Haiku 4.5, and Codex GPT-5.5 at catching AI hallucinations — except on the one slice that needs reasoning, where only the frontier wins.**
 > On a held-out stratified sample the tiny tree scores a **perfect 1.000** macro-F1 vs **Opus 0.816 / Codex 0.899 / Haiku 0.900** (all zero-shot), at **0.03 ms** and **$0.0001/1k** — 3,500× to 500,000× cheaper. Then I ablated it: drop `lcs_char_ratio` and macro-F1 craters −0.074; drop *any of the other twelve* features and it moves **0.0000**. It was a **1-feature model in disguise** all along.
@@ -165,16 +174,50 @@ flowchart LR
     G --> H[Form-ambiguous control<br/>form ≠ grounding]
 ```
 
+## Production — the two-head scorer (Phase 6)
+
+The champion ships as a 0.32 MB joblib bundle (model + fitted IDF table + threshold), reproducing the
+research metrics exactly: raw macro-F1 **0.9967**, length-matched **0.9808**, hallucination recall 0.994.
+
+```python
+from src.predict import ConversationQualityScorer
+scorer = ConversationQualityScorer.load()
+scorer.score(knowledge="...", question="...", answer="...")
+# -> {prob_hallucinated, verdict, features (13), is_verbatim, verbatim_suspect, ...}
+```
+
+**The router experiment (full test, n=4,000, τ=0.5).** Does escalating verbatim suspects to a frontier
+LLM help? No — every policy lowers macro-F1, because the verbatim-suspect pool is 47.9% of traffic and
+**99.5% verbatim-correct** answers:
+
+| Policy | judge | macro-F1 | new FP | residual caught | routed | cost/1k |
+|---|---|--:|--:|:--:|--:|--:|
+| **tree only** | — | **0.9967** | 0 | 0/10 | 0% | $0.0001 |
+| multihop router | Haiku 4.5 | 0.9908 | 29 | 5/10 | 4.9% | $0.110 |
+| multi-candidate (Phase-5 idea) | Haiku 4.5 | 0.9906 | 25 | 0/10 | 4.1% | $0.108 |
+| naive router | Haiku 4.5 | 0.9272 | 287 | 9/10 | 47.9% | $0.196 |
+| naive router | Codex GPT-5.5 | 0.8785 | 477 | **10/10** | 47.9% | $24.0 |
+
+**Run the demo** (Streamlit; live tree scoring + on-demand LLM relevance check on verbatim suspects):
+```bash
+streamlit run app.py
+```
+
 ## Repo layout
 ```
-notebooks/phase1_eda_baselines.ipynb        # Phase 1 experiment (executed, 40 cells)
-notebooks/phase2_multimodel.ipynb           # Phase 2 — six paradigms × raw vs matched
-notebooks/phase3_features_crossencoder.ipynb # Phase 3 — engineered features + fine-tuned CE
-config/config.yaml                          # dataset, split, metric config
-data/README.md                              # HaluEval-QA download + license
-results/                                    # leaderboards (csv/json), metrics.json, figures
-reports/day{1,2,3}_phase{1,2,3}_report.md   # full per-phase research reports
-results/EXPERIMENT_LOG.md                   # cumulative master log
+src/                                         # Phase 6 production pipeline (importable)
+  data_pipeline.py  feature_engineering.py   #   load + frozen split; the 13 features
+  train.py  predict.py  evaluate.py          #   train champion; inference; eval suite
+  router.py  llm_judge.py  router_eval.py    #   two-head router + frontier judge + blended eval
+  plots.py  utils.py
+app.py                                       # Streamlit two-head demo (Phase 6)
+models/champion.joblib · model_card.md       # 0.32 MB bundle + model card
+tests/                                        # 19 pytest (pipeline, features, predict, router)
+notebooks/phase{1..5}_*.ipynb                # Phases 1-5 research (executed, with outputs)
+config/config.yaml · data/README.md
+results/                                      # leaderboards, metrics.json, figures, LLM caches
+reports/day{1..6}_phase{1..6}_report.md       # full per-phase research reports
+results/EXPERIMENT_LOG.md                     # cumulative master log
 requirements.txt
 ```
 
@@ -185,6 +228,13 @@ pip install -r requirements.txt
 mkdir -p data/raw && curl -s -o data/raw/qa_data.json \
   https://raw.githubusercontent.com/RUCAIBox/HaluEval/main/data/qa_data.json
 jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselines.ipynb
+
+# Phase 6 production pipeline
+python -m src.train          # -> models/champion.joblib (reproduces matched-F1 0.9808)
+python -m src.evaluate       # raw + length-matched metrics on the test split
+python -m src.router_eval    # full-test router economics (cached LLM calls; idempotent)
+python -m pytest tests/ -q   # 19 tests
+streamlit run app.py         # the demo
 ```
 
 ## Roadmap
@@ -193,10 +243,10 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 | 1 | Domain research + dataset + EDA + baselines + length-matched control | ✅ |
 | 2 | 4–6 paradigms (n-grams, SBERT, zero-shot NLI) × raw vs matched | ✅ |
 | 3 | Feature engineering + fine-tuned cross-encoder + form-ambiguous control | ✅ |
-| 4 | Hyperparameter tuning + error analysis | ⏳ |
-| 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ⏳ |
-| 6 | Production pipeline + Streamlit UI | ⏳ |
-| 7 | Tests + README polish + consolidation | ⏳ |
+| 4 | Hyperparameter tuning + error analysis (tuning was a no-op; ceiling is relevance) | ✅ |
+| 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ✅ |
+| 6 | Production pipeline + Streamlit UI + **blended router economics** | ✅ |
+| 7 | Tests + README polish + consolidation | ✅ |
 
 ## References
 - Li et al. *HaluEval.* EMNLP 2023.

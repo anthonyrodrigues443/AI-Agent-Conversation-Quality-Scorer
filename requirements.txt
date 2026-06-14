@@ -19,3 +19,9 @@ datasets==4.8.4
 jupyter
 nbconvert
 ipykernel
+
+# --- Phase 6 (production pipeline + Streamlit UI + tests) ---
+joblib==1.5.3
+streamlit==1.58.0
+pyyaml==6.0.3
+pytest==9.0.2
