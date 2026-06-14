@@ -1198,5 +1198,152 @@
       }
     ],
     "saturation_frac": 0.05
+  },
+  "phase5": {
+    "dataset": "HaluEval-QA",
+    "primary_metric": "length_matched_macro_f1",
+    "phase4_champion_matched_f1": 0.9808,
+    "qa_relevance_hybrid_matched_f1": 0.986,
+    "ce_grounding_vs_qa_aware": [
+      {
+        "model": "ce_grounding (k,a)  [Phase 3]",
+        "matched_F1": 0.9457,
+        "raw_F1": 0.9887,
+        "residual_recall": "2/10",
+        "ctrl_FPR": 0.0031
+      },
+      {
+        "model": "ce_qa_aware (q+k,a) [Phase 5]",
+        "matched_F1": 0.9211,
+        "raw_F1": 0.9867,
+        "residual_recall": "2/10",
+        "ctrl_FPR": 0.0037
+      }
+    ],
+    "leave_one_out_most_critical": [
+      {
+        "dropped": "lcs_char_ratio",
+        "matched_F1": 0.9065,
+        "delta": -0.0742,
+        "raw_F1": 0.9832,
+        "reuse_recall": 0.9915
+      },
+      {
+        "dropped": "ground_overlap",
+        "matched_F1": 0.9808,
+        "delta": 0.0,
+        "raw_F1": 0.9967,
+        "reuse_recall": 0.9915
+      },
+      {
+        "dropped": "is_substr",
+        "matched_F1": 0.9808,
+        "delta": 0.0,
+        "raw_F1": 0.9967,
+        "reuse_recall": 0.9915
+      }
+    ],
+    "leave_one_out_features_that_hurt": [],
+    "llm_head_to_head_n50": [
+      {
+        "rank": 1,
+        "model": "eng_xgboost (champion, CPU)",
+        "n": 50,
+        "accuracy": 1.0,
+        "macro_F1": 1.0,
+        "prec_hallu": 1.0,
+        "recall_hallu": 1.0,
+        "latency/row": "0.030ms",
+        "cost/1k($)": 0.0001
+      },
+      {
+        "rank": 2,
+        "model": "qa_relevance_hybrid (CPU+1 CE fwd)",
+        "n": 50,
+        "accuracy": 1.0,
+        "macro_F1": 1.0,
+        "prec_hallu": 1.0,
+        "recall_hallu": 1.0,
+        "latency/row": "~15ms (CE fwd)",
+        "cost/1k($)": 0.012
+      },
+      {
+        "rank": 3,
+        "model": "Claude Haiku 4.5 (zero-shot)",
+        "n": 50,
+        "accuracy": 0.9,
+        "macro_F1": 0.9,
+        "prec_hallu": 0.917,
+        "recall_hallu": 0.88,
+        "latency/row": "9.7s (CLI)",
+        "cost/1k($)": 0.35
+      },
+      {
+        "rank": 4,
+        "model": "Codex GPT-5.5 (zero-shot)",
+        "n": 50,
+        "accuracy": 0.9,
+        "macro_F1": 0.899,
+        "prec_hallu": 1.0,
+        "recall_hallu": 0.8,
+        "latency/row": "18.6s (CLI)",
+        "cost/1k($)": 50.0
+      },
+      {
+        "rank": 5,
+        "model": "Claude Opus 4.8 (zero-shot)",
+        "n": 50,
+        "accuracy": 0.82,
+        "macro_F1": 0.816,
+        "prec_hallu": 0.944,
+        "recall_hallu": 0.68,
+        "latency/row": "7.5s (CLI)",
+        "cost/1k($)": 5.25
+      }
+    ],
+    "champion_residual_recall": "0/10",
+    "grounded_irrelevant_probe": [
+      {
+        "model": "Codex GPT-5.5",
+        "residual_recall": "10/10",
+        "ctrl_FPR": 0.1,
+        "probe_bal_acc": 0.95
+      },
+      {
+        "model": "Claude Haiku 4.5",
+        "residual_recall": "9/10",
+        "ctrl_FPR": 0.2,
+        "probe_bal_acc": 0.85
+      },
+      {
+        "model": "Claude Opus 4.8",
+        "residual_recall": "5/10",
+        "ctrl_FPR": 0.0,
+        "probe_bal_acc": 0.75
+      },
+      {
+        "model": "ce_qa_aware (argmax)",
+        "residual_recall": "2/10",
+        "ctrl_FPR": 0.0,
+        "probe_bal_acc": 0.6
+      },
+      {
+        "model": "qa_relevance_hybrid",
+        "residual_recall": "2/10",
+        "ctrl_FPR": 0.0,
+        "probe_bal_acc": 0.6
+      },
+      {
+        "model": "eng_xgboost (champion)",
+        "residual_recall": "0/10",
+        "ctrl_FPR": 0.0,
+        "probe_bal_acc": 0.5
+      }
+    ],
+    "references": [
+      "Luna (arXiv:2406.00975)",
+      "QAFactEval/QuestEval (QA-based faithfulness)",
+      "Illusion of Progress (arXiv:2508.08285)"
+    ]
   }
 }

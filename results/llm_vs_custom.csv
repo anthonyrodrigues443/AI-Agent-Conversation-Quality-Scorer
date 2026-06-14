@@ -1,0 +1,6 @@
+rank,model,n,accuracy,macro_F1,prec_hallu,recall_hallu,latency/row,cost/1k($)
+1,"eng_xgboost (champion, CPU)",50,1.0,1.0,1.0,1.0,0.030ms,0.0001
+2,qa_relevance_hybrid (CPU+1 CE fwd),50,1.0,1.0,1.0,1.0,~15ms (CE fwd),0.012
+3,Claude Haiku 4.5 (zero-shot),50,0.9,0.9,0.917,0.88,9.7s (CLI),0.35
+4,Codex GPT-5.5 (zero-shot),50,0.9,0.899,1.0,0.8,18.6s (CLI),50.0
+5,Claude Opus 4.8 (zero-shot),50,0.82,0.816,0.944,0.68,7.5s (CLI),5.25

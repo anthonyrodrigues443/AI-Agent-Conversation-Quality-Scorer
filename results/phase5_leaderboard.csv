@@ -1,0 +1,5 @@
+model,matched_F1,raw_F1,residual_caught
+qa_relevance_hybrid (13f + ce_qa),0.986,0.9972,2/10
+eng_xgboost (Phase-4 champion),0.9808,0.9967,0/10
+ce_grounding (Phase 3),0.9457,0.9887,2/10
+ce_qa_aware (argmax),0.9211,0.9867,2/10

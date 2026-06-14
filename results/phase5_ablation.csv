@@ -1,0 +1,15 @@
+dropped,matched_F1,delta,raw_F1,reuse_recall
+(none) full 13f,0.9808,0.0,0.9967,0.9915
+ground_overlap,0.9808,0.0,0.9967,0.9915
+is_substr,0.9808,0.0,0.9967,0.9915
+lcs_char_ratio,0.9065,-0.0742,0.9832,0.9915
+lcs_token_ratio,0.9808,0.0,0.9967,0.9915
+num_frac_in_know,0.9808,0.0,0.9967,0.9915
+n_num_missing,0.9808,0.0,0.9967,0.9915
+year_mismatch,0.9808,0.0,0.9967,0.9915
+sent_overlap_max,0.9808,0.0,0.9967,0.9915
+overlap_spread,0.9808,0.0,0.9967,0.9915
+novel_overlap,0.9808,0.0,0.9967,0.9915
+idf_overlap,0.9808,0.0,0.9967,0.9915
+ans_has_neg,0.9808,0.0,0.9967,0.9915
+neg_mismatch,0.9808,0.0,0.9967,0.9915

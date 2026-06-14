@@ -199,4 +199,62 @@ relevance* signal aimed squarely at the 10 verbatim-but-wrong misses — plus th
 one-feature-out ablation.
 
 ---
-*(Phase 5+ appended on subsequent sessions.)*
+
+## Phase 5 — Advanced techniques + ablation + frontier-LLM head-to-head (2026-06-12)
+
+**Question:** can a question-aware signal break the saturated 0.9808 ceiling and rescue the grounded-but-irrelevant residual; which features actually carry the signal; and how does the champion fare against zero-shot frontier LLMs — overall and on that residual?
+
+### 5.1 Question-aware cross-encoder + QA-relevance hybrid
+Fine-tuned `cross-encoder/ms-marco-MiniLM-L-6-v2` (22M) with identical Phase-3 hyper-parameters, input changed *only* to put the question in segment A (`"question: {q} context: {k}"`). Threshold-free argmax.
+
+| Model | matched F1 | raw F1 | residual (of 10) | ctrl FPR |
+|---|---:|---:|:--:|---:|
+| qa_relevance_hybrid (13f + ce_qa logit) | **0.9860** | 0.9972 | 2/10 | — |
+| eng_xgboost (Phase-4 champion) | 0.9808 | 0.9967 | 0/10 | — |
+| ce_grounding (k,a) — Phase 3 | 0.9457 | 0.9887 | 2/10 | 0.0031 |
+| ce_qa_aware (q+k,a) — Phase 5 | 0.9211 | 0.9867 | 2/10 | 0.0037 |
+
+**Adding the question HURT the standalone classifier** (0.9457 → 0.9211) but the QA-CE *probability* is the hybrid's #2 feature (importance 0.303) and nudges the ceiling to **0.9860 (+0.0052)**. Soft signal > hard argmax. Residual barely moved (0 → 2/10).
+
+### 5.2 Leave-one-feature-out ablation
+| Dropped | matched F1 | Δ |
+|---|---:|---:|
+| (none) full 13f | 0.9808 | 0.0000 |
+| **lcs_char_ratio** | 0.9065 | **−0.0742** |
+| every other feature (×12) | 0.9808 | 0.0000 |
+
+**The 13-feature champion is a 1-feature model in disguise** — only `lcs_char_ratio` (longest common character run) carries unique signal; the other twelve are exactly redundant. No feature hurts. Removal beats split-importance: `is_substr` (Phase-3 "top") is fully substituted by its continuous cousin.
+
+### 5.3 Frontier-LLM head-to-head (zero-shot, 210 cached calls, 100% parse-success)
+**Representative n=50 (stratified 25/25), ranked by macro-F1:**
+| Rank | Model | Acc | macro-F1 | Prec | Recall | Latency/row | Cost/1k |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 1 | **eng_xgboost (champion, CPU)** | 1.00 | **1.000** | 1.000 | 1.00 | 0.031 ms | $0.0001 |
+| 2 | qa_relevance_hybrid (CPU+CE) | 1.00 | 1.000 | 1.000 | 1.00 | ~15 ms | $0.012 |
+| 3 | Claude Haiku 4.5 (zero-shot) | 0.90 | 0.900 | 0.917 | 0.88 | 9.7 s | $0.35 |
+| 4 | Codex GPT-5.5 (zero-shot) | 0.90 | 0.899 | 1.000 | 0.80 | 18.6 s | $50* |
+| 5 | Claude Opus 4.8 (zero-shot) | 0.82 | 0.816 | 0.944 | 0.68 | 7.5 s | $5.25 |
+
+**Grounded-but-irrelevant probe (10 verbatim hallucinations + 10 grounded controls):**
+| Model | residual recall | ctrl FPR | bal-acc |
+|---|:--:|---:|---:|
+| Codex GPT-5.5 | **10/10** | 0.10 | 0.95 |
+| Claude Haiku 4.5 | 9/10 | 0.20 | 0.85 |
+| Claude Opus 4.8 | 5/10 | 0.00 | 0.75 |
+| ce_qa_aware (fine-tuned) | 2/10 | 0.00 | 0.60 |
+| qa_relevance_hybrid | 2/10 | 0.00 | 0.60 |
+| **eng_xgboost (champion)** | **0/10** | 0.00 | 0.50 |
+
+\* Codex cost is the CLI-realistic figure (~12k agent-loop tokens/call); direct GPT-5.5 API at the task's I/O ≈ $0.5/1k.
+
+**Findings:**
+1. **The champion is a 1-feature model** — only `lcs_char_ratio` matters (−0.074 when removed); all other 12 features Δ=0.0000.
+2. **Question-awareness hurts the classifier, helps the feature** — standalone −0.025; as a soft input, hybrid +0.0052.
+3. **The tiny tree beats Opus 4.8 / Haiku 4.5 / Codex GPT-5.5** on the representative distribution (1.000 vs 0.82–0.90) at 3,500×–500,000× lower cost.
+4. **…but only frontier reasoning catches grounded-but-irrelevant hallucinations** — Codex 10/10, Haiku 9/10, Opus 5/10 vs champion 0/10, fine-tuned QA-CE 2/10.
+5. **Opus is the conservative outlier** — highest precision, lowest recall; never false-alarms but catches half.
+
+**Production recommendation (corrected after Codex review #7):** trigger router — tree on 100% of traffic (~free, sub-ms), route the `is_substr==1` "looks-grounded" suspects to a frontier LLM. **But on HaluEval that trigger is ~48% of traffic (1,915/4,000)** — verbatim-correct answers are ~half the data — and at the LLM's probe FPR (~0.10) routing them risks ~190 new false positives to rescue 10 hallucinations. So the naive router is *not* cheap; grounded-but-irrelevant detection is genuinely expensive. Tightening the trigger + a high-precision LLM threshold (blended cost/recall on full test) is Phase-6 work.
+
+---
+*(Phase 6+ appended on subsequent sessions.)*
