@@ -20,16 +20,20 @@ from typing import Callable, Dict, Optional
 
 from .predict import ConversationQualityScorer
 
-# Comparative / selection-question cues: "X or Y", "which ... or ...", "between A and B".
+# Disjunction cue ("X or Y", "versus") -- NOT "between A and B", which has no 'or'.
 _OR = re.compile(r"\b(?:or|versus|vs\.?)\b", re.I)
 _WHICH = re.compile(r"\b(which|who|whom|either|between|first|earlier|older|later|bigger|larger|"
                     r"smaller|more|less|greater|came first|started first)\b", re.I)
 
 
 def is_multi_candidate(question: str) -> bool:
-    """Cheap heuristic for a comparative/selection question -- where a verbatim quote
-    can be the *wrong* candidate.  Requires both a disjunction cue and a
-    selection/comparison word, so plain 'What is X?' questions are excluded."""
+    """Cheap heuristic for a *comparative* "X or Y" selection question. Requires both a
+    disjunction cue and a selection/comparison word, so plain 'What is X?' is excluded.
+
+    NOTE (Phase 6): this trigger is a known *failure* on HaluEval-QA — it catches 0/10 of
+    the residual hallucinations, which are single-candidate multi-hop questions, not "X or Y"
+    comparatives. It is kept only to reproduce the Phase-5 hypothesis the router eval refutes;
+    do not rely on it as a production gate (see src/router_eval.py)."""
     q = str(question)
     return bool(_OR.search(q) and _WHICH.search(q))
 

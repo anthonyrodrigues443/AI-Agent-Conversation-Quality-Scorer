@@ -274,26 +274,26 @@ Productionised the champion as an importable pipeline (`src/{data_pipeline,featu
 **Discovery — the Phase-5 heuristic is exactly wrong.** The 10 residual hallucinations are *single-candidate, multi-hop* questions (the verbatim answer is the wrong **hop**, e.g. quoting the "Leading Minister" when asked who succeeded Hitler), not comparative "X or Y" questions. The 165 multi-candidate verbatim suspects contain **zero** hallucinations — pure false-positive risk.
 
 ### 6.2 Blended router policies (expected-value over measured LLM rates)
-Measured rates: **Haiku** residual-recall 0.90 / FPR 0.15 (n=40 controls); **Codex GPT-5.5** residual-recall 1.00 / FPR 0.25 (n=12).
+Measured rates: **Haiku** residual-recall 0.90 / FPR 0.15 (n=40 controls); **Codex GPT-5.5** residual-recall 1.00 / FPR 0.167 (n=18 controls).
 
 **Judge = Claude Haiku 4.5 (τ=0.5):**
 | Policy | macro-F1 | prec | recall | new FP | residual caught | routed | cost/1k |
 |---|--:|--:|--:|--:|:--:|--:|--:|
 | **tree only** | **0.9967** | 0.9995 | 0.994 | 0 | 0/10 | 0% | $0.0001 |
-| multihop (both/also/share) | 0.9908 | 0.985 | 0.997 | 29 | 5/10 | 4.9% | $0.110 |
-| multi-candidate (Phase-5 idea) | 0.9906 | 0.987 | 0.994 | 25 | 0/10 | 4.1% | $0.108 |
-| complexity (q_words≥20) | 0.9759 | 0.957 | 0.997 | 89 | 5/10 | 14.9% | $0.130 |
-| naive (all verbatim suspects) | 0.9272 | 0.874 | 0.999 | 287 | 9/10 | 47.9% | $0.196 |
+| multihop (both/also/share) | 0.9908 | 0.985 | 0.997 | 30 | 5/10 | 4.9% | $0.015 |
+| multi-candidate (Phase-5 idea) | 0.9906 | 0.987 | 0.994 | 26 | 0/10 | 4.1% | $0.013 |
+| complexity (q_words≥20) | 0.9759 | 0.957 | 0.997 | 90 | 5/10 | 14.9% | $0.045 |
+| naive (all verbatim suspects) | 0.9272 | 0.874 | 0.999 | 287 | 9/10 | 47.9% | $0.144 |
 
 **Judge = Codex GPT-5.5 (τ=0.5), the best reasoner:**
 | Policy | macro-F1 | new FP | residual caught | cost/1k |
 |---|--:|--:|:--:|--:|
 | **tree only** | **0.9967** | 0 | 0/10 | $0.0001 |
-| naive (all verbatim suspects) | 0.8785 | 477 | **10/10** | $24.0 |
+| naive (all verbatim suspects) | 0.9194 | 318 | **10/10** | $24.0 |
 
 ### Findings
 1. **tree-only is Pareto-optimal — every LLM router LOWERS macro-F1.** The residual is 10/4,000 = 0.25% of test; the verbatim-suspect pool it hides in is 47.9% of traffic and 99.5% correct, so any LLM FPR > ~0.5% creates more new false positives than the hallucinations it rescues.
-2. **Even Codex GPT-5.5, catching 10/10 of the residual, drops macro-F1 to 0.8785** by manufacturing ~476 false positives at ~$24/1k. Perfect recall on the slice is not enough.
+2. **Even Codex GPT-5.5, catching 10/10 of the residual, drops macro-F1 to 0.9194** by manufacturing ~318 false positives at ~$24/1k. Perfect recall on the slice is not enough.
 3. **This CORRECTS the Phase-5 recommendation.** Phase 5 said "ship both — tree at scale, LLM on the suspects." Phase 6 shows that on HaluEval-QA you should **ship tree-only**: the suspect pool is too majority-correct for escalation to pay. The right escalation target would be a tiny, high-precision sub-slice that no cheap lexical rule isolates — which is the whole reason the residual is a *reasoning* problem.
 
 **Deliverables:** `src/` production pipeline (8 modules), `models/{champion.joblib,model_card.md}`, `app.py` (Streamlit two-head demo with live scoring + on-demand LLM relevance check), `tests/` (19 pytest, all green), `results/{phase6_router_policies.csv,phase6_router_sizing.json,phase6_router_tradeoff.png,ui_screenshot.png}`, append-only LLM cache `results/phase6_cache/`.

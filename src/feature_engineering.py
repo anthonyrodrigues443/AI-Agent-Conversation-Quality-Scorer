@@ -51,11 +51,14 @@ class FeatureEngineer:
 
     # ---- fit / persistence ----
     def fit(self, knowledge, answers) -> "FeatureEngineer":
+        # materialise once so one-shot iterators (generators) don't yield an empty
+        # second pass and silently corrupt ndoc
+        docs = list(knowledge) + list(answers)
         docfreq: Counter = Counter()
-        for s in list(knowledge) + list(answers):
+        for s in docs:
             docfreq.update(set(toks(s)))
         self.docfreq = dict(docfreq)
-        self.ndoc = len(list(knowledge)) + len(list(answers))
+        self.ndoc = len(docs)
         return self
 
     def to_dict(self) -> dict:
@@ -133,6 +136,11 @@ class FeatureEngineer:
 
     def transform(self, answers, questions, knowledge) -> np.ndarray:
         """Batch transform into an (n, 13) matrix."""
+        answers, questions, knowledge = list(answers), list(questions), list(knowledge)
+        if not (len(answers) == len(questions) == len(knowledge)):
+            raise ValueError(
+                f"length mismatch: answers={len(answers)} questions={len(questions)} "
+                f"knowledge={len(knowledge)} (zip would silently truncate)")
         return np.array(
             [self.row(a, q, k) for a, q, k in zip(answers, questions, knowledge)],
             dtype=np.float32,

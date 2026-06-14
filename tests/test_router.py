@@ -44,10 +44,11 @@ def test_suspect_on_multi_candidate_escalates(scorer):
         "Which magazine was started first, Arthur's Magazine or First for Women?",
         "First for Women",
     )
-    if out["verbatim_suspect"]:
-        assert out["escalated"] is True
-        assert out["path"] == "llm"
-        assert out["verdict"] == "HALLUCINATED"
+    # assert the precondition explicitly so the escalation checks can't pass vacuously
+    assert out["verbatim_suspect"] is True
+    assert out["escalated"] is True
+    assert out["path"] == "llm"
+    assert out["verdict"] == "HALLUCINATED"
 
 
 def test_tighten_skips_single_candidate(scorer):

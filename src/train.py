@@ -19,6 +19,7 @@ import joblib
 import numpy as np
 from sklearn.metrics import (accuracy_score, balanced_accuracy_score, confusion_matrix,
                              f1_score, precision_score, recall_score, roc_auc_score)
+from sklearn.model_selection import StratifiedGroupKFold
 from xgboost import XGBClassifier
 
 from .data_pipeline import load_long_frame, load_split, nearest_length_match
@@ -29,9 +30,23 @@ RANDOM_STATE = 42
 # Phase-3 champion config (Phase-4 tuning confirmed it is already optimal).
 XGB_PARAMS = dict(n_estimators=500, max_depth=4, learning_rate=0.05, subsample=0.9,
                   colsample_bytree=0.9, eval_metric="logloss", random_state=RANDOM_STATE, n_jobs=1)
-# Recall-oriented operating point chosen in Phase 4 (maximises macro-F1 on raw test).
-OPERATING_THRESHOLD = 0.1634
 BUNDLE_PATH = MODELS_DIR / "champion.joblib"
+
+
+def _oof_operating_threshold(X, y, groups) -> float:
+    """Macro-F1-maximising decision threshold from group-disjoint out-of-fold predictions
+    on TRAIN -- so the operating point never sees the test split (no label leakage)."""
+    oof = np.zeros(len(y))
+    sgkf = StratifiedGroupKFold(n_splits=4, shuffle=True, random_state=RANDOM_STATE)
+    for tr, va in sgkf.split(X, y, groups):
+        m = XGBClassifier(**XGB_PARAMS).fit(X[tr], y[tr])
+        oof[va] = m.predict_proba(X[va])[:, 1]
+    best_t, best_f = 0.5, -1.0
+    for t in np.linspace(0.05, 0.95, 91):
+        f = f1_score(y, (oof >= t).astype(int), average="macro")
+        if f > best_f:
+            best_f, best_t = f, float(t)
+    return round(best_t, 4)
 
 
 def _metrics(y, pred, score) -> dict:
@@ -57,6 +72,7 @@ def train(out_path: Path = BUNDLE_PATH) -> dict:
     ytr = train_df.label.values
 
     model = XGBClassifier(**XGB_PARAMS).fit(Xtr, ytr)
+    operating_threshold = _oof_operating_threshold(Xtr, ytr, train_df.qid.values)
 
     # evaluate at the default 0.5 decision threshold (raw + length-matched)
     def evaluate(frame):
@@ -74,7 +90,7 @@ def train(out_path: Path = BUNDLE_PATH) -> dict:
         "model": model,
         "feature_engineer": fe.to_dict(),
         "feature_names": ALL_FEATURES,
-        "operating_threshold": OPERATING_THRESHOLD,
+        "operating_threshold": operating_threshold,  # OOF-derived on train (leakage-free)
         "default_threshold": 0.5,
         "xgb_params": XGB_PARAMS,
         "train": {

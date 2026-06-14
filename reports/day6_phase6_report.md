@@ -43,7 +43,7 @@ How research influenced today's work: the cascade literature says the escalation
 
 ### Experiment 6.3: Blended router economics (real, cached LLM eval)
 **Hypothesis:** escalating verbatim suspects to a frontier LLM improves macro-F1.
-**Method:** ran a real, cached, resumable LLM eval (`src/router_eval.py`) on all 10 residual hallucinations + a stratified control sample of verbatim-correct grounded answers, for **Claude Haiku 4.5** (50 calls) and **Codex GPT-5.5** (22 calls). Measured residual-recall and control-FPR, then blended the full-test confusion by expected value for each routing policy.
+**Method:** ran a real, cached, resumable LLM eval (`src/router_eval.py`) on all 10 residual hallucinations + a stratified control sample of verbatim-correct grounded answers, for **Claude Haiku 4.5** (residual-recall 0.90, FPR 0.15, n=40 controls) and **Codex GPT-5.5** (residual-recall 1.00, FPR 0.167, n=18 controls). Then blended the full-test confusion by expected value for each routing policy.
 **Result:** see Head-to-Head below.
 **Interpretation:** every router lowers macro-F1. The residual is 0.25% of test; the suspect pool is 99.5% correct, so the LLM's FPR on that majority dominates the handful of rescues.
 
@@ -51,15 +51,15 @@ How research influenced today's work: the cascade literature says the escalation
 | Policy (judge) | macro-F1 | precision | recall | new FP | residual caught | routed | cost/1k |
 |---|--:|--:|--:|--:|:--:|--:|--:|
 | **tree only** | **0.9967** | 0.9995 | 0.994 | 0 | 0/10 | 0% | $0.0001 |
-| multihop router (Haiku) | 0.9908 | 0.985 | 0.997 | 29 | 5/10 | 4.9% | $0.110 |
-| multi-candidate router (Haiku) | 0.9906 | 0.987 | 0.994 | 25 | 0/10 | 4.1% | $0.108 |
-| complexity router q≥20 (Haiku) | 0.9759 | 0.957 | 0.997 | 89 | 5/10 | 14.9% | $0.130 |
-| naive router (Haiku) | 0.9272 | 0.874 | 0.999 | 287 | 9/10 | 47.9% | $0.196 |
-| naive router (Codex GPT-5.5) | 0.8785 | 0.807 | 0.999 | 477 | **10/10** | 47.9% | $24.0 |
+| multihop router (Haiku) | 0.9908 | 0.985 | 0.997 | 30 | 5/10 | 4.9% | $0.015 |
+| multi-candidate router (Haiku) | 0.9906 | 0.987 | 0.994 | 26 | 0/10 | 4.1% | $0.013 |
+| complexity router q≥20 (Haiku) | 0.9759 | 0.957 | 0.997 | 90 | 5/10 | 14.9% | $0.045 |
+| naive router (Haiku) | 0.9272 | 0.874 | 0.999 | 287 | 9/10 | 47.9% | $0.144 |
+| naive router (Codex GPT-5.5) | 0.9194 | 0.863 | 0.999 | 318 | **10/10** | 47.9% | $24.0 |
 
 ## Key Findings
 1. **tree-only is Pareto-optimal — every LLM router makes the system worse.** Lexical grounding is a commodity the tree nails for ~free; the residual relevance errors are too rare (0.25%) to rescue without flooding the verbatim-correct majority with false positives.
-2. **Even Codex GPT-5.5 (10/10 on the residual) drops macro-F1 to 0.8785** by manufacturing ~476 false positives at ~$24/1k. Perfect recall on the hard slice is necessary but nowhere near sufficient.
+2. **Even Codex GPT-5.5 (10/10 on the residual) drops macro-F1 to 0.9194** by manufacturing ~318 false positives at ~$24/1k. Perfect recall on the hard slice is necessary but nowhere near sufficient.
 3. **What didn't work, and why:** the Phase-5 "multi-candidate only" trigger (0/10) — the residual lives in single-candidate multi-hop questions, not comparative ones. And no cheap lexical trigger isolates the 10 from the 1,905 correct answers, *because* relevance is a reasoning property, not a lexical one — the exact thesis of Phase 5, now quantified.
 
 ## Self-Correction

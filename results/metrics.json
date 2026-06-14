@@ -1367,7 +1367,8 @@
           1988
         ]
       ],
-      "us_per_row_features": null
+      "default_threshold": 0.5,
+      "operating_threshold_oof": 0.12
     },
     "router_sizing": {
       "n_test": 4000,
@@ -1398,8 +1399,8 @@
       },
       "codex/gpt-5.5": {
         "residual_recall": 1.0,
-        "ctrl_FPR": 0.25,
-        "n_ctrl": 12
+        "ctrl_FPR": 0.167,
+        "n_ctrl": 18
       }
     },
     "router_policies": {
@@ -1413,7 +1414,7 @@
           "residual_caught": "0/10",
           "new_false_positives": 0.0,
           "routed_frac": 0.0,
-          "cost_per_1k": 0.1
+          "cost_per_1k": 0.0001
         },
         {
           "policy": "naive_router (all verbatim suspects)",
@@ -1424,7 +1425,7 @@
           "residual_caught": "9/10",
           "new_false_positives": 285.8,
           "routed_frac": 0.4788,
-          "cost_per_1k": 0.1957
+          "cost_per_1k": 0.1437
         },
         {
           "policy": "multi_candidate_router (Phase-5 suggestion)",
@@ -1435,7 +1436,7 @@
           "residual_caught": "0/10",
           "new_false_positives": 24.8,
           "routed_frac": 0.0413,
-          "cost_per_1k": 0.1082
+          "cost_per_1k": 0.0125
         },
         {
           "policy": "complexity_router (q_words>=20)",
@@ -1446,7 +1447,7 @@
           "residual_caught": "5/10",
           "new_false_positives": 88.5,
           "routed_frac": 0.1487,
-          "cost_per_1k": 0.1298
+          "cost_per_1k": 0.0447
         },
         {
           "policy": "multihop_router (both/also/share)",
@@ -1457,7 +1458,7 @@
           "residual_caught": "5/10",
           "new_false_positives": 28.6,
           "routed_frac": 0.049,
-          "cost_per_1k": 0.1098
+          "cost_per_1k": 0.0148
         }
       ],
       "codex/gpt-5.5": [
@@ -1470,59 +1471,59 @@
           "residual_caught": "0/10",
           "new_false_positives": 0.0,
           "routed_frac": 0.0,
-          "cost_per_1k": 0.1
+          "cost_per_1k": 0.0001
         },
         {
           "policy": "naive_router (all verbatim suspects)",
-          "macro_f1": 0.8785,
-          "precision_hallu": 0.8072,
+          "macro_f1": 0.9194,
+          "precision_hallu": 0.8625,
           "recall_hallu": 0.999,
-          "FP": 477.2,
+          "FP": 318.5,
           "residual_caught": "10/10",
-          "new_false_positives": 476.2,
+          "new_false_positives": 317.5,
           "routed_frac": 0.4788,
-          "cost_per_1k": 23.9896
+          "cost_per_1k": 23.9376
         },
         {
           "policy": "multi_candidate_router (Phase-5 suggestion)",
-          "macro_f1": 0.9864,
-          "precision_hallu": 0.9792,
+          "macro_f1": 0.9899,
+          "precision_hallu": 0.9859,
           "recall_hallu": 0.994,
-          "FP": 42.2,
+          "FP": 28.5,
           "residual_caught": "0/10",
-          "new_false_positives": 41.2,
+          "new_false_positives": 27.5,
           "routed_frac": 0.0413,
-          "cost_per_1k": 2.1584
+          "cost_per_1k": 2.0626
         },
         {
           "policy": "complexity_router (q_words>=20)",
-          "macro_f1": 0.9611,
-          "precision_hallu": 0.9307,
+          "macro_f1": 0.9734,
+          "precision_hallu": 0.9525,
           "recall_hallu": 0.9965,
-          "FP": 148.5,
+          "FP": 99.3,
           "residual_caught": "5/10",
-          "new_false_positives": 147.5,
+          "new_false_positives": 98.3,
           "routed_frac": 0.1487,
-          "cost_per_1k": 7.5226
+          "cost_per_1k": 7.4376
         },
         {
           "policy": "multihop_router (both/also/share)",
-          "macro_f1": 0.9861,
-          "precision_hallu": 0.9761,
+          "macro_f1": 0.99,
+          "precision_hallu": 0.9838,
           "recall_hallu": 0.9965,
-          "FP": 48.8,
+          "FP": 32.8,
           "residual_caught": "5/10",
-          "new_false_positives": 47.8,
+          "new_false_positives": 31.8,
           "routed_frac": 0.049,
-          "cost_per_1k": 2.5451
+          "cost_per_1k": 2.4501
         }
       ]
     },
     "key_findings": [
       "tree_only is Pareto-optimal: every LLM router LOWERS macro-F1 on the full 4000-row test split.",
       "The verbatim-suspect pool is 47.9% of traffic and 99.5% verbatim-CORRECT answers, so any LLM FPR>~0.5% manufactures more false positives than the 10 residual hallucinations it can rescue.",
-      "Phase-5's suggested 'multi-candidate only' trigger catches 0/10 residual hallucinations (they are single-candidate multi-hop questions) and still creates ~25 false positives.",
-      "Even Codex GPT-5.5 (10/10 residual recall) drops macro-F1 to 0.8785 by creating ~476 false positives at ~$24/1k. This CORRECTS the Phase-5 'ship both' recommendation: on HaluEval-QA, ship tree-only."
+      "Phase-5's suggested 'multi-candidate only' trigger catches 0/10 residual hallucinations (single-candidate multi-hop questions) and still creates ~26-28 false positives.",
+      "Even Codex GPT-5.5 (10/10 residual recall) drops macro-F1 from 0.9967 to 0.9194 by creating ~318 false positives at ~$24/1k. This CORRECTS the Phase-5 'ship both' recommendation: on HaluEval-QA, ship tree-only."
     ]
   }
 }

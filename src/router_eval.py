@@ -177,15 +177,17 @@ def blend(t: pd.DataFrame, suspects: pd.DataFrame, residual: pd.DataFrame,
         m["residual_caught"] = f"{int(dTP)}/{len(residual)}"
         m["new_false_positives"] = round(dFP, 1)
         per_call = COST_PER_CALL_USD.get(backend, 0.05)
-        m["cost_per_1k"] = round(TREE_COST_PER_1K * (1 - len(routed) / n) * 1000
-                                 + per_call * (len(routed) / n) * 1000, 4)
+        # TREE_COST_PER_1K is already a per-1k figure; only the routed fraction pays the
+        # per-CALL LLM price (×1000 to convert $/call → $/1k).
+        frac = len(routed) / n
+        m["cost_per_1k"] = round(TREE_COST_PER_1K * (1 - frac) + per_call * frac * 1000, 4)
         return m
 
     rows = [{"policy": "tree_only", "macro_f1": metrics_from(TN, FP, FN, TP)["macro_f1"],
              "precision_hallu": metrics_from(TN, FP, FN, TP)["precision_hallu"],
              "recall_hallu": metrics_from(TN, FP, FN, TP)["recall_hallu"], "FP": FP, "FN": FN,
              "routed": 0, "routed_frac": 0.0, "residual_caught": f"0/{len(residual)}",
-             "new_false_positives": 0.0, "cost_per_1k": TREE_COST_PER_1K * 1000}]
+             "new_false_positives": 0.0, "cost_per_1k": TREE_COST_PER_1K}]
     sus = suspects
     rows.append(policy("naive_router (all verbatim suspects)", sus.index.isin(sus.index)))
     rows.append(policy("multi_candidate_router (Phase-5 suggestion)", sus.multi_candidate.values))
