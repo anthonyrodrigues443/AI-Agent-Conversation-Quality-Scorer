@@ -1,0 +1,8 @@
+# Minimal CI dependency set for src/ + tests (Python 3.11).
+# Full research-notebook environment: requirements.txt
+numpy==2.4.2
+pandas==3.0.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+pytest==8.4.2
+ruff==0.14.14

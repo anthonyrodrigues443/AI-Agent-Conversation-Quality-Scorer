@@ -1,18 +1,53 @@
 # AI Agent Conversation Quality Scorer
 
-Detecting when an AI agent's answer is **ungrounded / hallucinated** vs. faithful to the source it was
-given — the load-bearing sub-problem of any agent **conversation-quality** scorer. Built as a research
-log: multiple approaches compared, the benchmark itself interrogated, and findings corrected when the
-data disagreed with my assumptions.
+Detecting when an AI agent's answer is ungrounded or hallucinated relative to the source passage it was given. This is the load-bearing sub-problem of scoring agent conversation quality.
+
+[![CI](https://github.com/anthonyrodrigues443/AI-Agent-Conversation-Quality-Scorer/actions/workflows/ci.yml/badge.svg)](https://github.com/anthonyrodrigues443/AI-Agent-Conversation-Quality-Scorer/actions)
+
+A 13-feature XGBoost that runs in 0.03 ms on CPU scores **0.9808 length-matched macro-F1** on [HaluEval-QA](https://github.com/RUCAIBox/HaluEval) (10k HotpotQA items, 20k balanced samples). On a held-out sample it beats zero-shot Claude Opus 4.8, Codex GPT-5.5, and Claude Haiku 4.5, at a fraction of their cost. Then the ablation: drop `lcs_char_ratio` (the longest common character run between answer and source) and macro-F1 falls by 0.074. Drop any of the other twelve features and it moves exactly 0.0000. The champion is a 1-feature model in disguise. Trust the length-matched number, not the raw one: this benchmark leaks answer length, and a length-only classifier rides that leak to 0.944 before collapsing to 0.615 under the matched control.
+
+The winning pipeline is ported from the research notebooks to `src/` and covered by **48 offline tests**. Retraining on the frozen split reproduces the recorded results exactly: raw 0.9967, length-matched 0.9808.
+
+| Model | Raw macro-F1 | Length-matched macro-F1 |
+|---|---:|---:|
+| ChatGPT zero-shot (HaluEval paper, accuracy) | 0.626 | n/a |
+| Length-only logreg (the shortcut) | 0.9437 | 0.6150 |
+| Grounding-overlap threshold (1 line of code) | 0.9252 | 0.9244 |
+| **eng_xgboost (this repo's `src/`)** | **0.9967** | **0.9808** |
+| Best frontier LLM zero-shot (Claude Haiku 4.5)* | 0.900 | n/a |
+
+\* Held-out stratified sample, n=50, where the tree scores 1.000 (Codex GPT-5.5: 0.899, Claude Opus 4.8: 0.816). Full table: `results/llm_vs_custom.csv`.
+
+## Run it
+
+```bash
+git clone https://github.com/anthonyrodrigues443/AI-Agent-Conversation-Quality-Scorer.git
+cd AI-Agent-Conversation-Quality-Scorer
+pip install -r requirements-ci.txt    # numpy, pandas, scikit-learn, xgboost, pytest, ruff
+pytest -q                             # 48 tests, all offline
+
+python -m src download                # HaluEval-QA qa_data.json (~6 MB)
+python -m src train    --model-dir models/eng_xgboost   # prints raw 0.9967 / matched 0.9808
+python -m src evaluate --model-dir models/eng_xgboost
+python -m src score    --model-dir models/eng_xgboost \
+  --question "Who wrote Hamlet?" \
+  --answer "Hamlet was written by Christopher Marlowe in 1590." \
+  --knowledge "Hamlet is a tragedy written by William Shakespeare between 1599 and 1601."
+# {"p_hallucinated": 1.0, "verdict": "hallucinated"}
+```
+
+## Why I built this
+
+Scoring agent conversations needs a grounding check that runs on every message. A frontier-LLM judge does the job, but paying model prices per message kills the economics at any real volume, so I wanted to know how cheap the check could get before it stopped working. I also kept interrogating my own benchmark, because the first version of every result here was misleading: a length-matched control exposed the length shortcut, a form-ambiguous control exposed the overlap rule as a form detector, and a leave-one-out ablation exposed my 13-feature champion as a 1-feature model. What survived is a tree that costs about nothing and wins the average, plus one hard slice (right text, wrong answer to the question) where only a frontier model wins. That slice, not the headline number, is the open problem.
+
+## The full research log
 
 **Dataset:** [HaluEval-QA](https://github.com/RUCAIBox/HaluEval) (Li et al., EMNLP 2023) — 10k
 HotpotQA items, each with a grounded and a ChatGPT-hallucinated answer → a balanced 20k-sample binary
 task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's ChatGPT zero-shot =
 **62.6% accuracy**.
 
----
-
-## Headline (Phase 5 — latest)
+### Headline (Phase 5 — latest)
 
 > **My 13-feature CPU model beats Claude Opus 4.8, Claude Haiku 4.5, and Codex GPT-5.5 at catching AI hallucinations — except on the one slice that needs reasoning, where only the frontier wins.**
 > On a held-out stratified sample the tiny tree scores a **perfect 1.000** macro-F1 vs **Opus 0.816 / Codex 0.899 / Haiku 0.900** (all zero-shot), at **0.03 ms** and **$0.0001/1k** — 3,500× to 500,000× cheaper. Then I ablated it: drop `lcs_char_ratio` and macro-F1 craters −0.074; drop *any of the other twelve* features and it moves **0.0000**. It was a **1-feature model in disguise** all along.
@@ -22,7 +57,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 ![Phase 5 — custom vs frontier LLMs](results/llm_comparison.png)
 ![Phase 5 — grounded-but-irrelevant probe](results/phase5_probe.png)
 
-## Headline (Phase 3)
+### Headline (Phase 3)
 
 > **Phase 2 said a one-line lexical rule beats everything. Phase 3 says: that rule was mostly a *form* detector.**
 > Engineered claim-relation features hit **0.9808** length-matched macro-F1 (the Phase-2 bar was 0.9244) — and
@@ -37,7 +72,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 ![Phase 3 leaderboard](results/phase3_leaderboard.png)
 
-## Headline (Phase 1)
+### Headline (Phase 1)
 
 > **HaluEval-QA is mostly solvable by counting characters — so I built a length-matched control to find out what's real.**
 > A length-only classifier scores **0.944 macro-F1** on the raw split (vs the paper's 0.626 accuracy for ChatGPT — a fair beat: on this balanced task macro-F1≈accuracy, so the length model is 0.944 on both).
@@ -48,7 +83,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 ![raw vs length-matched leaderboard](results/phase1_baseline_comparison.png)
 
-## Phase 1 — honest leaderboard (ranked by length-matched macro-F1)
+### Phase 1 — honest leaderboard (ranked by length-matched macro-F1)
 
 | Rank | Model | matched F1 | raw F1 | Δ drop | reads source? |
 |---:|---|---:|---:|---:|:--:|
@@ -61,7 +96,8 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 
 **The bar Phase 2+ must beat is 0.919 (matched), not the inflated 0.944 (raw).**
 
-## Key findings
+### Key findings
+
 1. **The benchmark leaks length.** Hallucinated answers are ~4.8× longer (95% end in punctuation vs 1%
    of grounded). A length-only model rides that to 0.944 raw, 0.615 matched.
 2. **Only the answer's length matters** — question/knowledge lengths are constant within a matched pair,
@@ -74,9 +110,9 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 7. **(Phase 4) Every lever is exhausted — the ceiling is structural.** Optuna moves matched-F1 by **+0.0000**; XGBoost = LightGBM = CatBoost land at *exactly* 0.9967/0.9808; the uncalibrated tree is already calibrated (ECE 0.0041, Platt makes it 2.5× worse); the learning curve is flat after 800 rows. 10/12 residual misses are verbatim-but-wrong answers — the ceiling is **question-relevance, not grounding**.
 8. **(Phase 5) A 1-feature model that beats frontier LLMs on average but loses the slice that needs reasoning.** Leave-one-out: only `lcs_char_ratio` matters (−0.074; the other 12 are Δ=0.0000). Zero-shot, the 0.03 ms CPU tree scores **1.000** macro-F1 vs Opus 0.816 / Codex 0.899 / Haiku 0.900 — yet is **0/10** on grounded-but-irrelevant hallucinations where **Codex GPT-5.5 is 10/10**. The production answer is a router (tree everywhere + LLM on verbatim suspects); since the `is_substr` trigger is ~48% of traffic, relevance detection is genuinely expensive.
 
-## Iteration Summary
+### Iteration Summary
 
-### Phase 1: Domain Research + Baselines + Length-Matched Control — 2026-06-08
+#### Phase 1: Domain Research + Baselines + Length-Matched Control — 2026-06-08
 
 <table>
 <tr>
@@ -102,7 +138,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
-### Phase 2: Multi-Paradigm Showdown — Lexical vs. Meaning — 2026-06-09
+#### Phase 2: Multi-Paradigm Showdown — Lexical vs. Meaning — 2026-06-09
 
 <table>
 <tr>
@@ -128,7 +164,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
-### Phase 3: Feature Engineering + a Fine-Tuned Cross-Encoder — 2026-06-10
+#### Phase 3: Feature Engineering + a Fine-Tuned Cross-Encoder — 2026-06-10
 
 <table>
 <tr>
@@ -154,7 +190,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
-### Phase 4: Hyperparameter Tuning, Calibration & Error Analysis — 2026-06-11
+#### Phase 4: Hyperparameter Tuning, Calibration & Error Analysis — 2026-06-11
 
 <table>
 <tr>
@@ -180,7 +216,7 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
-### Phase 5: Advanced Techniques + Ablation + Frontier-LLM Head-to-Head — 2026-06-12
+#### Phase 5: Advanced Techniques + Ablation + Frontier-LLM Head-to-Head — 2026-06-12
 
 <table>
 <tr>
@@ -206,42 +242,53 @@ task. **Primary metric:** macro-F1. **Reference point:** the HaluEval paper's Ch
 </tr>
 </table>
 
-## Architecture
+### Architecture
 
 ```mermaid
 flowchart LR
     A[HaluEval-QA<br/>10k items] --> B[expand: grounded 0 / hallucinated 1<br/>20k balanced]
     B --> C[GroupShuffleSplit by qid<br/>no item leakage]
-    C --> D[Baselines<br/>length · tfidf · grounding-overlap]
-    D --> E[Length-matched control<br/>KS 0.87 → 0.12]
-    E --> F[Honest leaderboard<br/>raw vs matched]
-    F --> G[Phase 3: engineered features<br/>+ fine-tuned cross-encoder]
-    G --> H[Form-ambiguous control<br/>form ≠ grounding]
+    C --> D[13 engineered features<br/>src/features.py]
+    D --> E[XGBoost champion<br/>src/pipeline.py]
+    E --> F[Raw + length-matched eval<br/>src/evaluate.py]
+    F --> G[Honest leaderboard<br/>raw vs matched]
 ```
 
-## Repo layout
+### Repo layout
+
 ```
+src/                                        # production port of the winning pipeline
+  features.py                               #   the 13 engineered features (verbatim from phase 3)
+  data.py                                   #   HaluEval-QA download + grounded/hallucinated pairing
+  pipeline.py                               #   grouped split, champion XGBoost, save/load
+  evaluate.py                               #   raw + length-matched evaluation
+  __main__.py                               #   CLI: download / train / evaluate / score
+tests/                                      # 48 offline pytest tests
 notebooks/phase1_eda_baselines.ipynb        # Phase 1 experiment (executed, 40 cells)
 notebooks/phase2_multimodel.ipynb           # Phase 2 — six paradigms × raw vs matched
 notebooks/phase3_features_crossencoder.ipynb # Phase 3 — engineered features + fine-tuned CE
+notebooks/phase4_tuning.ipynb               # Phase 4: Optuna, calibration, error analysis
+notebooks/phase5_advanced_llm.ipynb         # Phase 5: ablation + frontier-LLM head-to-head
 config/config.yaml                          # dataset, split, metric config
 data/README.md                              # HaluEval-QA download + license
 results/                                    # leaderboards (csv/json), metrics.json, figures
-reports/day{1,2,3}_phase{1,2,3}_report.md   # full per-phase research reports
+reports/day{1..5}_phase{1..5}_report.md     # full per-phase research reports
 results/EXPERIMENT_LOG.md                   # cumulative master log
-requirements.txt
+requirements.txt                            # full research environment (notebooks)
+requirements-ci.txt                         # minimal src/ + tests environment
 ```
 
-## Reproduce
+### Reproduce the notebooks
+
 ```bash
 python3 -m venv --system-site-packages .venv && source .venv/bin/activate
 pip install -r requirements.txt
-mkdir -p data/raw && curl -s -o data/raw/qa_data.json \
-  https://raw.githubusercontent.com/RUCAIBox/HaluEval/main/data/qa_data.json
+python -m src download
 jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselines.ipynb
 ```
 
-## Roadmap
+### Roadmap
+
 | Phase | Focus | Status |
 |------:|-------|:------:|
 | 1 | Domain research + dataset + EDA + baselines + length-matched control | ✅ |
@@ -249,10 +296,11 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/phase1_eda_baselin
 | 3 | Feature engineering + fine-tuned cross-encoder + form-ambiguous control | ✅ |
 | 4 | Hyperparameter tuning + error analysis | ✅ |
 | 5 | Advanced techniques + ablation + **LLM head-to-head** (Claude/Codex) | ✅ |
-| 6 | Production pipeline + Streamlit UI | ⏳ |
-| 7 | Tests + README polish + consolidation | ⏳ |
+| 6 | Production port: `src/` pipeline + CLI + tests + CI | ✅ |
+| 7 | Streamlit UI + tighter router trigger for grounded-but-irrelevant | ⏳ |
 
-## References
+### References
+
 - Li et al. *HaluEval.* EMNLP 2023.
 - *The Illusion of Progress: Re-evaluating Hallucination Detection in LLMs.* arXiv:2508.08285 (2025).
 - *Representation-based Broad Hallucination Detectors Fail to Generalize OOD.* arXiv:2509.19372 (2025).
